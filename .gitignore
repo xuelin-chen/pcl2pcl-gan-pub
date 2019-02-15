@@ -1,0 +1,13 @@
+**/pycache
+*.so
+*.o
+**/run
+**/data
+*.pyc
+**/scannet
+**/run*
+**/log*
+*.png
+*.jpeg
+*.pickle
+*.ply

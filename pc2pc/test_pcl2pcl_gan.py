@@ -1,13 +1,14 @@
 '''
     Single-GPU training.
 '''
+import numpy as np
+
 import math
 from datetime import datetime
 import socket
 import os
 import sys
 
-import numpy as np
 import tensorflow as tf
 import pickle
 
@@ -25,18 +26,20 @@ import shapenet_pc_dataset
 
 # paras for autoencoder
 para_config_gan = {
-    'exp_name': 'pcl2pcl_gan_PN_lamda=1_m400',
+    'exp_name': 'pcl2pcl_gan_np2c_dualAE',
+    'random_seed': 0, # None for totally random
 
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
     #'extra_point_clouds_list': ['data/0_extra.ply', 'data/1_extra.ply'],
     'extra_point_clouds_list': None,
 
     # noisy AE, clean AE and pcl2pcl gan checkpoint model
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run2/log_ae_chair_2k_noisy-partial_2019-01-30-19-21-35/ckpts/model_1800.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run/log_ae_emd_chair_2048_good/ckpts/model_960.ckpt',
-    'pcl2pcl_gan_ckpt': '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_PN_lamda=1_2019-02-12-19-34-37/ckpts/model_400.ckpt',
+    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt',
+    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt',
 
-    'batch_size': 24,
+    'pcl2pcl_gan_ckpt': '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_np2c_dualAE_2019-02-16-15-52-24/ckpts/model_1990.ckpt',
+
+    'batch_size': 48, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,
@@ -44,19 +47,20 @@ para_config_gan = {
     'kk': 1, # train k times for G each loop when training
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
-    'shuffle_dataset': False,
 
-    #'loss': 'emd',
-    'loss': 'hausdorff',
+    'loss': 'emd',
+    #'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
     'eval_loss': 'emd',
+    #'eval_loss': 'hausdorff',
+    #'eval_loss': 'chamfer',
 
     # noise parameters
     'noise_mu': 0.0, 
     'noise_sigma': 0.01, 
     'r_min': 0.1, 
     'r_max': 0.25, 
-    'partial_portion': 0.25,
+    'partial_portion': 0.25, # 0.25 by default
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -88,7 +92,7 @@ para_config_ae = {
     'activation_fn': tf.nn.relu,
 }
 
-NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config_gan['extra_point_clouds_list'])
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config_gan['extra_point_clouds_list'], random_seed=para_config_gan['random_seed'])
 
 #################### dirs, code backup and etc for this run ##########################
 LOG_DIR = os.path.join('run_pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_test_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
@@ -149,7 +153,7 @@ def test():
             while NOISY_TEST_DATASET.has_next_batch():
 
                 noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], r_min=para_config_gan['r_min'], r_max=para_config_gan['r_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
-                
+
                 feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
                             latent_gan.gt: clean_cur,
@@ -164,7 +168,7 @@ def test():
             NOISY_TEST_DATASET.reset()
 
             pc_util.write_ply_batch(np.asarray(all_inputs), os.path.join(LOG_DIR, 'pcloud', 'input'))
-            pc_util.write_ply_batch(np.asarray(all_recons), os.path.join(LOG_DIR, 'pcloud', 'recon'))
+            pc_util.write_ply_batch(np.asarray(all_recons), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
             print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
             return eval_loss_mean

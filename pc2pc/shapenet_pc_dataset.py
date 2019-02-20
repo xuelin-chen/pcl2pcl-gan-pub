@@ -4,7 +4,7 @@ import sys
 import math
 import numpy as np
 import pickle
-import random
+from numpy.random import RandomState
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
@@ -55,94 +55,8 @@ snc_synth_category_to_id = {
     'washer'   : '04554684' ,  'boat'      : '02858304' ,  'cellphone'     : '02992529' 
 }
 
-# not used for now
-class ShapeNetPointsDataset:
-    def __init__(self, shapenet_points_root, cat_name='chair', batch_size=50, npoint=2048, shuffle=True):
-        self.shapenet_points_root = shapenet_points_root
-        self.cat_name = cat_name
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        self.syth_cat_id = snc_synth_category_to_id[cat_name]
-        self.point_cloud_dir = os.path.join(self.shapenet_points_root, self.syth_cat_id, 'point_cloud_clean')
-        self.npoint = npoint
-
-        self.point_clouds = self._read_all_pointclouds(self.point_cloud_dir)
-        if self.shuffle:
-            self.point_clouds = self._shuffle_array(self.point_clouds)
-
-        self.reset()
-
-    def _shuffle_array(self, arr):
-        idx = np.arange(arr.shape[0])
-        np.random.shuffle(idx)
-        return arr[idx, ...]
-    
-    def _read_all_pointclouds(self, dir):
-        '''
-        return a numpy array
-        '''
-        pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'.pickle')
-        if os.path.exists(pickle_filename):
-            print('Loading cached pickle file.')
-            p_f = open(pickle_filename, 'rb')
-            point_clouds = pickle.load(p_f)
-            p_f.close()
-        else:
-            print('Reading and caching pickle file.')
-            point_clouds = pc_util.read_all_ply_under_dir(dir) # a list of arrays
-            p_f = open(pickle_filename, 'wb')
-            pickle.dump(point_clouds, p_f)
-            print('Cache to %s'%(pickle_filename))
-            p_f.close()
-        
-        print('Loaded #point clouds: ', len(point_clouds))
-        res = []
-        if True:
-            print('Warning: randomly duplicate/downsample point clouds!')
-            for pc in point_clouds:
-                choice = np.random.choice(len(pc), self.npoint, replace=True)
-                pc = pc[choice, :]
-                res.append(pc)
-        res = np.array(res)
-        print('Data shape: ', res.shape)
-        return res
-
-    def reset(self):
-        self.batch_idx = 0
-        self.point_clouds = self._shuffle_array(self.point_clouds)
-
-    def has_next_batch(self):
-        num_batch = np.floor(self.point_clouds.shape[0] / self.batch_size)
-        if self.batch_idx < num_batch:
-            return True
-        return False
-    
-    def next_batch(self):
-        start_idx = self.batch_idx * self.batch_size
-        end_idx = (self.batch_idx+1) * self.batch_size
-        data_batch = self.point_clouds[start_idx:end_idx, :, :]
-
-        self.batch_idx += 1
-        return data_batch
-
-    # to be removed
-    def get_a_random_batch(self):
-        num_batch = np.floor(self.point_clouds.shape[0] / self.batch_size)
-        all_batch_idx = np.arange(num_batch, dtype=int)
-        np.random.shuffle(all_batch_idx)
-        idx_random = all_batch_idx[0]
-
-        start_idx = idx_random * self.batch_size
-        end_idx = (idx_random+1) * self.batch_size
-        data_batch = self.point_clouds[start_idx:end_idx, :, :]
-
-        return data_batch
-
-    def get_npoint(self):
-        return self.point_clouds.shape[1]
-
 class ShapeNetPartPointsDataset:
-    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True, normalize=False, split='train', extra_ply_point_clouds_list=None):
+    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True, normalize=False, split='train', extra_ply_point_clouds_list=None, random_seed=None):
         '''
         part_point_cloud_dir: the directory contains the oringal ply point clouds
         batch_size:
@@ -154,6 +68,7 @@ class ShapeNetPartPointsDataset:
                                      note that only use it in test time, 
                                      these point clouds will be inserted in front of the point cloud list,
                                      which means extra clouds get to be tested first
+        random_seed: not used for now, debug needed
         '''
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -161,6 +76,11 @@ class ShapeNetPartPointsDataset:
         self.npoint = npoint
         self.normalize = normalize
         self.split = split
+        self.random_seed = random_seed
+
+        # make a random generator
+        self.rand_gen = RandomState(self.random_seed)
+        #self.rand_gen = np.random
 
         # list of numpy arrays
         self.point_clouds = self._read_all_pointclouds(self.point_cloud_dir)
@@ -174,12 +94,13 @@ class ShapeNetPartPointsDataset:
         self.reset()
 
     def _shuffle_array(self, arr):
+
         idx = np.arange(arr.shape[0])
-        np.random.shuffle(idx)
+        self.rand_gen.shuffle(idx)
         return arr[idx, ...]
 
     def _shuffle_list(self, l):
-        random.shuffle(l)
+        self.rand_gen.shuffle(l)
     
     def _read_all_pointclouds(self, dir):
         '''
@@ -231,7 +152,7 @@ class ShapeNetPartPointsDataset:
         data_batch = np.zeros((self.batch_size, self.npoint, 3))
         for i in range(start_idx, end_idx):
             pc_cur = self.point_clouds[i] # M x 3
-            choice_cur = np.random.choice(pc_cur.shape[0], self.npoint, replace=True)
+            choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
             idx_cur = i % self.batch_size
             data_batch[idx_cur] = pc_cur[choice_cur, :]
 
@@ -240,24 +161,6 @@ class ShapeNetPartPointsDataset:
 
         self.batch_idx += 1
         return data_batch
-
-    def next_batch_noise_added(self, noise_mu=0.0, noise_sigma=0.01):
-        data_batch = self.next_batch()
-
-        # noise
-        noise_here = np.random.normal(noise_mu, noise_sigma, data_batch.shape)
-        data_batch = data_batch + noise_here
-
-        return data_batch
-    
-    def next_batch_noisy_clean_pair(self, noise_mu=0.0, noise_sigma=0.01):
-        data_batch = self.next_batch()
-
-        # noise
-        noise_here = np.random.normal(noise_mu, noise_sigma, data_batch.shape)
-        noisy_batch = data_batch + noise_here
-
-        return noisy_batch, data_batch
 
     def next_batch_noise_added_with_partial(self, noise_mu=0.0, noise_sigma=0.01, r_min=0.1, r_max=0.25, partial_portion=0.25, with_gt=False):
         '''
@@ -269,19 +172,18 @@ class ShapeNetPartPointsDataset:
         # randomly carve out some points
         data_res = []
         for _, data in enumerate(data_batch):
-            do_partial_odd = np.random.rand()
+            do_partial_odd = self.rand_gen.rand()
             if do_partial_odd < partial_portion:
-                center_idx = np.random.randint(self.get_npoint(), size=1)
+                center_idx = self.rand_gen.randint(self.get_npoint(), size=1)
                 center = data[center_idx]
 
                 distances = np.linalg.norm(data - center, axis=1)
 
-                clip_r = np.random.uniform(r_min, r_max)
-                #clip_r = np.random.rand() * r_max
+                clip_r = self.rand_gen.uniform(r_min, r_max)
 
                 remain_points = data[distances > clip_r]
                 
-                choice = np.random.choice(len(remain_points), self.npoint, replace=True)
+                choice = self.rand_gen.choice(len(remain_points), self.npoint, replace=True)
                 remain_points = remain_points[choice, :]
 
                 data_res.append(remain_points)
@@ -291,50 +193,46 @@ class ShapeNetPartPointsDataset:
         data_res = np.asarray(data_res)
 
         # noise
-        noise_here = np.random.normal(noise_mu, noise_sigma, data_res.shape)
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_res.shape)
         noisy_batch = data_res + noise_here
 
         if with_gt:
             return noisy_batch, data_batch
         return noisy_batch
 
-    # for test, deprecated
-    def get_a_random_batch(self, noise_mu, noise_sigma):
-        num_batch = np.floor(self.point_clouds.shape[0] / self.batch_size)
-        all_batch_idx = np.arange(num_batch, dtype=int)
-        np.random.shuffle(all_batch_idx)
-        idx_random = all_batch_idx[0]
+    def next_batch_noise_added(self, noise_mu=0.0, noise_sigma=0.01):
 
-        start_idx = idx_random * self.batch_size
-        end_idx = (idx_random+1) * self.batch_size
-        data_batch = self.point_clouds[start_idx:end_idx, :, :]
+        data_batch = self.next_batch()
 
         # noise
-        noise_here = np.random.normal(noise_mu, noise_sigma, data_batch.shape)
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_batch.shape)
         data_batch = data_batch + noise_here
 
         return data_batch
+    
+    def next_batch_noisy_clean_pair(self, noise_mu=0.0, noise_sigma=0.01):
+        data_batch = self.next_batch()
+
+        # noise
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_batch.shape)
+        noisy_batch = data_batch + noise_here
+
+        return noisy_batch, data_batch
 
     def get_npoint(self):
         return self.npoint
 
 if __name__=='__main__':
 
-    TRAIN_DATASET = ShapeNetPartPointsDataset('/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean', batch_size=6, npoint=8192, normalize=False, split='test')
-    #n_batch, c_batch = TRAIN_DATASET.nex_batch_noisy_clean_pair(0, 0.01)
-
-    data_batch = TRAIN_DATASET.next_batch()
-    pc_util.write_ply(data_batch[0], 'test_clean.ply')
-
-    noisy_data_batch = TRAIN_DATASET.next_batch_noise_added(noise_sigma=0.05)
-    pc_util.write_ply(noisy_data_batch[0], 'test_noisy.ply')
+    TRAIN_DATASET = ShapeNetPartPointsDataset('/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean', batch_size=6, npoint=8192, normalize=False, shuffle=False, split='test', random_seed=0)
 
     noisy_partial_data_batch = TRAIN_DATASET.next_batch_noise_added_with_partial(partial_portion=1)
     pc_util.write_ply(noisy_partial_data_batch[0], 'test_noisy_partial.ply')
 
-    noisy_data_batch, clean_data_batch = TRAIN_DATASET.next_batch_noisy_clean_pair()
-    pc_util.write_ply(noisy_data_batch[0], 'test_pair_noisy.ply')
-    pc_util.write_ply(clean_data_batch[0], 'test_pair_clean.ply')
+    TEST_DATASET = ShapeNetPartPointsDataset('/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean', batch_size=6, npoint=8192, normalize=False, shuffle=False, split='test', random_seed=0)
+
+    noisy_partial_data_batch = TEST_DATASET.next_batch_noise_added_with_partial(partial_portion=1)
+    pc_util.write_ply(noisy_partial_data_batch[0], 'test_noisy_partial_1.ply')
 
     '''
     epoch = 10

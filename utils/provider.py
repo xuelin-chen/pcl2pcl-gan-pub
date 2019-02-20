@@ -5,6 +5,7 @@ import h5py
 import math
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
+import pc_util
 
 def shuffle_data(data, labels):
     """ Shuffle data and labels.
@@ -257,8 +258,6 @@ def rotate_point_cloud_by_angle_with_normal(batch_data, rotation_angle):
         rotated_data[k,:,3:6] = np.dot(shape_normal.reshape((-1,3)), rotation_matrix)
     return rotated_data
 
-
-
 def rotate_perturbation_point_cloud(batch_data, angle_sigma=0.06, angle_clip=0.18):
     """ Randomly perturb the point clouds by small rotations
         Input:
@@ -309,6 +308,22 @@ def shift_point_cloud(batch_data, shift_range=0.1):
     for batch_index in range(B):
         batch_data[batch_index,:,:] += shifts[batch_index,:]
     return batch_data
+
+def lift_point_cloud_to_ground(batch_data):
+    '''
+    snap the bottom of the point cloud's bbox to the ground
+    Input:
+          BxNx3 array, original batch of point clouds
+        Return:
+          BxNx3 array, batch of point clouds
+    '''
+    pts_min, _ = pc_util.point_bbox(batch_data)
+    y_min = pts_min[:, :, 1] # (B, 1, 1)
+
+    res_data = batch_data
+    res_data[:, :, 1] = batch_data[:, :, 1] - y_min
+
+    return res_data
 
 
 def random_scale_point_cloud(batch_data, scale_low=0.8, scale_high=1.25):

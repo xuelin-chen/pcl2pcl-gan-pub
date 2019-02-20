@@ -25,10 +25,12 @@ import shapenet_pc_dataset
 
 
 para_config_gan = {
-    'exp_name': 'pcl2pcl_gan_PN_singleAE',
+    'exp_name': 'pcl2pcl_gan_np2c_dualAE_HD',
+    'random_seed': None,
+
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run2/log_ae_chair_2k_noisy-partial_2019-01-30-19-21-35/ckpts/model_1800.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run/log_ae_emd_chair_2048_good/ckpts/model_960.ckpt',
+    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt',
+    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,
@@ -38,16 +40,23 @@ para_config_gan = {
     'kk': 1, # train k times for G each loop when training
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
-    'shuffle_dataset': True,
 
-    'loss': 'emd',
-    #'loss': 'hausdorff',
+    #'loss': 'emd',
+    'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
-    'eval_loss': 'emd',
+    #'eval_loss': 'emd',
+    'eval_loss': 'hausdorff',
+
+    # noise parameters
+    'noise_mu': 0.0, 
+    'noise_sigma': 0.01, 
+    'r_min': 0.1, 
+    'r_max': 0.25, 
+    'partial_portion': 0.25,
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
-
+    
     # G paras
     'g_fc_sizes': [128],
     'g_activation_fn': tf.nn.relu,
@@ -145,11 +154,12 @@ def train():
             tf.summary.scalar('loss/D/D_fake_loss', D_fake_loss_mean_op, collections=['train'])
             tf.summary.scalar('loss/D/D_real_loss', D_real_loss_mean_op, collections=['train'])
 
-            tf.summary.scalar('eval_loss/emd_loss', eval_loss_mean_op, collections=['eval'])
+            tf.summary.scalar('loss/%s_loss'%(para_config_gan['eval_loss']), eval_loss_mean_op, collections=['test'])
 
             summary_op = tf.summary.merge_all('train')
-            summary_eval_op = tf.summary.merge_all('eval')
+            summary_eval_op = tf.summary.merge_all('test')
             train_writer = tf.summary.FileWriter(os.path.join(LOG_DIR, 'summary', 'train'))
+            test_writer = tf.summary.FileWriter(os.path.join(LOG_DIR, 'summary', 'test'))
             saver = tf.train.Saver(max_to_keep=None)
 
         # print
@@ -194,8 +204,10 @@ def train():
                 sess.run(reset_metrics)
 
                 while NOISY_TRAIN_DATASET.has_next_batch() and CLEAN_TRAIN_DATASET.has_next_batch():
-                    noise_cur = NOISY_TRAIN_DATASET.next_batch_noise_added_with_partial(partial_portion=1)
+
+                    noise_cur = NOISY_TRAIN_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], r_min=para_config_gan['r_min'], r_max=para_config_gan['r_max'], partial_portion=para_config_gan['partial_portion'])
                     clean_cur = CLEAN_TRAIN_DATASET.next_batch()
+
                     feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
                             latent_gan.input_clean_cloud: clean_cur,
@@ -238,11 +250,10 @@ def train():
                     train_writer.add_summary(summary, i)
 
                 if i % para_config_gan['save_interval'] == 0:
-                    # test and evaluate on all data
-                    '''
-                    NOISY_TRAIN_DATASET.reset()
-                    while NOISY_TRAIN_DATASET.has_next_batch():
-                        noise_cur, clean_cur = NOISY_TRAIN_DATASET.next_batch_noisy_clean_pair()
+                    # test and evaluate on test set
+                    NOISY_TEST_DATASET.reset()
+                    while NOISY_TEST_DATASET.has_next_batch():
+                        noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], r_min=para_config_gan['r_min'], r_max=para_config_gan['r_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
                         feed_dict={
                                     latent_gan.input_noisy_cloud: noise_cur,
                                     latent_gan.gt: clean_cur,
@@ -250,11 +261,12 @@ def train():
                                     }
                         fake_clean_reconstr_val, _ = sess.run([fake_clean_reconstr, eval_loss_mean_update_op], feed_dict=feed_dict)
 
-                    NOISY_TRAIN_DATASET.reset()
+                    NOISY_TEST_DATASET.reset()
+
                     eval_loss_mean_val, summary_eval = sess.run([eval_loss_mean_op, summary_eval_op], feed_dict=feed_dict)
-                    train_writer.add_summary(summary_eval, i)
-                    log_string('Eval loss on all data: %f'%(np.mean(eval_loss_mean_val)))
-                    '''
+
+                    test_writer.add_summary(summary_eval, i)
+                    log_string('Eval loss (%s) on test set: %f'%(para_config_gan['eval_loss'], np.mean(eval_loss_mean_val)))
                     
                     # save model
                     save_path = saver.save(sess, os.path.join(LOG_DIR, 'ckpts', 'model_%d.ckpt'%(i)))

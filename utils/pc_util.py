@@ -348,6 +348,7 @@ def read_all_ply_under_dir(dir):
     for f in all_filenames:
         if f.endswith('.ply'):
             ply_filenames.append(os.path.join(dir, f))
+    ply_filenames.sort()
     
     point_clouds = []
     for ply_f in tqdm(ply_filenames):

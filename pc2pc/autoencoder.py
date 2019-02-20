@@ -10,6 +10,7 @@ from pointnet_encoder_decoder import EncoderPointnet, DecoderFC
 sys.path.append(os.path.join(BASE_DIR, 'structural_losses_utils'))
 from tf_nndistance import nn_distance
 from tf_approxmatch import approx_match, match_cost
+from tf_hausdorff_distance import directed_hausdorff
 
 default_para_config = {
     'exp_name': 'ae_emd_chair_2048',
@@ -80,16 +81,19 @@ class AutoEncoder:
 
         self.latent_code = tf.placeholder(tf.float32, shape=[paras['batch_size'], paras['latent_code_dim']])
 
+        # eval only, to compute loss against gt
+        self.gt = tf.placeholder(tf.float32, shape=[paras['batch_size'], self.point_cloud_shape[0], self.point_cloud_shape[1]])
+
     def model(self):
         self.latent_code = self.encoder(self.input_pl, self.is_training)
-        self.reconstr = self.decoder(self.latent_code, self.is_training)
+        reconstr = self.decoder(self.latent_code, self.is_training)
 
-        ae_loss = self._reconstruction_loss(self.reconstr, self.input_pl)
+        ae_loss = self._reconstruction_loss(reconstr, self.input_pl)
 
-        # loss visualization
-        #tf.summary.scalar('loss', ae_loss)
+        # eval
+        self.eval_loss = self._reconstruction_loss(reconstr, self.gt)
 
-        return ae_loss, self.reconstr, self.latent_code
+        return ae_loss, reconstr, self.latent_code
     
     def make_optimizer(self, loss):
         def make_optimizer(loss, name='Adam'):
@@ -117,10 +121,7 @@ class AutoEncoder:
 
         return train_step
 
-
     def _reconstruction_loss(self, recon, input):
-        #latent_code = encoder(input, self.is_training)
-        #recon = decoder(latent_code, self.is_training)
 
         if self.loss == 'chamfer':
             cost_p1_p2, _, cost_p2_p1, _ = nn_distance(recon, input)
@@ -130,7 +131,9 @@ class AutoEncoder:
             loss = match_cost(recon, input, match)
             loss = tf.reduce_mean(loss)
             loss = tf.div(loss, self.point_cloud_shape[0]) # return point-wise loss
-        
+        elif self.loss == 'hausdorff':
+            distances = directed_hausdorff(input, recon) # partial-noisy ->fake_clean
+            loss = tf.reduce_mean(distances)
         return loss
 
     def __str__(self):

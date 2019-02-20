@@ -24,8 +24,9 @@ import autoencoder
 
 # paras for autoencoder on all chairs
 para_config = {
-    'exp_name': 'ae_chair',
-    'ae_type': 'np2np', # 'c2c', 'n2n', 'np2np'
+    'exp_name': 'ae_chair_data_aug',
+    'random_seed': None,
+    'ae_type': 'c2c', # 'c2c', 'n2n', 'np2np'
 
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
 
@@ -39,6 +40,7 @@ para_config = {
     'save_interval': 10, # unit in epoch
     
     'loss': 'emd',
+    'data_aug': True,
 
     # noise parameters
     'noise_mu': 0.0, 
@@ -151,6 +153,9 @@ def train():
                     log_string('Unknown ae type: %s'%(para_config['ae_type']))
                     exit
                 
+                if para_config['data_aug'] == True:
+                    input_batch = TRAIN_DATASET.aug_data_batch(input_batch)
+                
                 _, _ = sess.run([optimizer, reconstr_loss_mean_update], 
                                                         feed_dict={
                                                                     ae.input_pl: input_batch, 
@@ -188,6 +193,9 @@ def train():
                     else:
                         log_string('Unknown ae type: %s'%(para_config['ae_type']))
                         exit
+                    
+                    if para_config['data_aug'] == True:
+                        input_batch_test = TEST_DATASET.aug_data_batch(input_batch_test)
 
                     reconstr_val_test, _ = sess.run([reconstr, reconstr_loss_mean_update],
                                                                     feed_dict={

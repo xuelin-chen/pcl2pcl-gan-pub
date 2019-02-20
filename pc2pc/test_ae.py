@@ -1,14 +1,14 @@
 '''
     Single-GPU training.
 '''
+import numpy as np
+
 import math
 from datetime import datetime
 import socket
 import os
 import sys
 import pickle
-
-import numpy as np
 import tensorflow as tf
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,16 +24,18 @@ import shapenet_pc_dataset
 import autoencoder
 
 para_config = {
-    'exp_name': 'ae_chair_m1600',
-    'ae_type': 'np2np', # 'c2c', 'n2n', 'np2np'
+    'exp_name': 'ae_chair_m1850',
+    'random_seed': 0, # None for totally random
+    'ae_type': 'np2c', # 'c2c', 'n2n', 'np2np', 'np2c'
 
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
+    'extra_point_clouds_list': None,
 
-    'ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_2019-02-14-20-05-24/ckpts/model_1600.ckpt' ,
+    'ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt' ,
 
     ########################## the paras below should be exactly the same with those of training #######################################
 
-    'batch_size': 50,
+    'batch_size': 48, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0005,
     'epoch': 2000,
     'output_interval': 10, # unit in batch
@@ -46,7 +48,7 @@ para_config = {
     'noise_sigma': 0.01, 
     'r_min': 0.1, 
     'r_max': 0.25, 
-    'partial_portion': 0.25,
+    'partial_portion': 0.25, # 0.25 by default
 
     # encoder
     'latent_code_dim': 128,
@@ -64,7 +66,7 @@ para_config = {
 }
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_ae', 'log_' + para_config['exp_name'] + '_test_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_ae', 'log_' + para_config['exp_name'] +'_'+ para_config['ae_type'] +'_test_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 
 script_name = os.path.basename(__file__)
@@ -79,7 +81,7 @@ LOG_FOUT.write(str(para_config)+'\n')
 
 HOSTNAME = socket.gethostname()
 
-TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test')
+TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config['extra_point_clouds_list'], random_seed=para_config['random_seed'])
 
 def log_string(out_str):
     LOG_FOUT.write(out_str+'\n')
@@ -116,22 +118,28 @@ def test():
             all_reconstr_clouds_test = []
             all_input_clouds_test = []
             all_latent_codes_test = []
-            reconstr_loss_mean_test = []
+            eval_loss_mean_test = []
             while TEST_DATASET.has_next_batch():
 
                 if para_config['ae_type'] == 'c2c':
                     input_batch_test = TEST_DATASET.next_batch()
+                    gt_batch_test = input_batch_test
                 elif para_config['ae_type'] == 'n2n':
                     input_batch_test = TEST_DATASET.next_batch_noise_added(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'])
+                    gt_batch_test = input_batch_test
                 elif para_config['ae_type'] == 'np2np':
                     input_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                    gt_batch_test = input_batch_test
+                elif para_config['ae_type'] == 'np2c':
+                    input_batch_test, gt_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'], with_gt=True)
                 else:
                     log_string('Unknown ae type: %s'%(para_config['ae_type']))
                     exit
-
-                latent_code_val_test, reconstr_val_test, reconstr_loss_val_test = sess.run([latent_code, reconstr, reconstr_loss],
+                
+                latent_code_val_test, reconstr_val_test, eval_loss_val_test = sess.run([latent_code, reconstr, ae.eval_loss],
                                                                 feed_dict={
                                                                             ae.input_pl: input_batch_test, 
+                                                                            ae.gt: gt_batch_test,
                                                                             ae.is_training: False
                                                                         }
                                                                 )
@@ -139,9 +147,9 @@ def test():
                 all_reconstr_clouds_test.extend(reconstr_val_test)
                 all_input_clouds_test.extend(input_batch_test)
                 all_latent_codes_test.extend(latent_code_val_test)
-                reconstr_loss_mean_test.append(reconstr_loss_val_test)
+                eval_loss_mean_test.append(eval_loss_val_test)
             
-            reconstr_loss_mean_test = np.mean(reconstr_loss_mean_test)
+            eval_loss_mean_test = np.mean(eval_loss_mean_test)
             
             # write out
             pc_util.write_ply_batch(np.asarray(all_reconstr_clouds_test), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
@@ -151,7 +159,7 @@ def test():
             latent_pickle_file.close()
 
             log_string('--------- on test split --------')
-            log_string('Mean Reconstruction loss: {:.6f}'.format(reconstr_loss_mean_test))
+            log_string('Mean eval loss ({}): {:.6f}'.format(para_config['loss'],eval_loss_mean_test))
 
              
 if __name__ == "__main__":

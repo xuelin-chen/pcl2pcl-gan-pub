@@ -1,5 +1,6 @@
 import os
 import sys
+from tqdm import tqdm
 
 import math
 import numpy as np
@@ -9,6 +10,7 @@ from numpy.random import RandomState
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
+import provider
 import pc_util
 
 snc_synth_id_to_category = {
@@ -54,6 +56,97 @@ snc_synth_category_to_id = {
     'sofa'     : '04256520' ,  'stove'     : '04330267' ,  'vessel'        : '04530566' ,
     'washer'   : '04554684' ,  'boat'      : '02858304' ,  'cellphone'     : '02992529' 
 }
+
+class DemoPointCloudDataset:
+    def __init__(self, part_point_cloud_dir, batch_size=1, npoint=2048, random_seed=None):
+        self.batch_size = batch_size
+        self.point_cloud_dir = part_point_cloud_dir
+        self.npoint = npoint
+        self.random_seed = random_seed
+
+        # make a random generator
+        self.rand_gen = RandomState(self.random_seed)
+
+        # list of numpy arrays
+        self.point_clouds = self._read_all_pointclouds(self.point_cloud_dir)
+
+        self.reset()
+    
+    def reset(self):
+        self.batch_idx = 0
+        self.rotate_angle_deg = 0
+
+    def _read_all_pointclouds(self, dir):
+        '''
+        return a list of point clouds
+        '''
+        point_clouds = pc_util.read_all_ply_under_dir(dir)
+
+        return point_clouds
+
+    def has_next_batch(self):
+        num_batch = np.floor(len(self.point_clouds) / self.batch_size)
+        if self.batch_idx < num_batch:
+            return True
+        return False
+
+    def next_batch(self):
+        start_idx = self.batch_idx * self.batch_size
+        end_idx = (self.batch_idx+1) * self.batch_size
+
+        data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        for i in range(start_idx, end_idx):
+            pc_cur = self.point_clouds[i] # M x 3
+            choice_cur = np.random.choice(pc_cur.shape[0], self.npoint, replace=True)
+            idx_cur = i % self.batch_size
+            data_batch[idx_cur] = pc_cur[choice_cur, :]
+
+        self.batch_idx += 1
+        return data_batch
+    
+    def next_batch_noise_added(self, noise_mu=0.0, noise_sigma=0.01):
+
+        data_batch = self.next_batch()
+
+        # noise
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_batch.shape)
+        data_batch = data_batch + noise_here
+
+        return data_batch
+    def get_cur_batch(self):
+        start_idx = self.batch_idx * self.batch_size
+        end_idx = (self.batch_idx+1) * self.batch_size
+
+        data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        for i in range(start_idx, end_idx):
+            pc_cur = self.point_clouds[i] # M x 3
+            choice_cur = np.random.choice(pc_cur.shape[0], self.npoint, replace=True)
+            idx_cur = i % self.batch_size
+            data_batch[idx_cur] = pc_cur[choice_cur, :]
+
+        return data_batch
+
+    def next_batch_rotated(self, rotated_angle_deg=30):
+
+        if self.rotate_angle_deg < 360:
+            data_batch = self.get_cur_batch()
+            # rotation for current point cloud not finished
+            data_batch = provider.rotate_point_cloud_by_angle(data_batch, self.rotate_angle_deg/180.0 * np.pi)
+
+            self.rotate_angle_deg += rotated_angle_deg
+        elif self.rotate_angle_deg == 360:
+            self.rotate_angle_deg = 0
+            self.batch_idx += 1
+
+            data_batch = self.get_cur_batch()
+            # rotation for current point cloud not finished
+            data_batch = provider.rotate_point_cloud_by_angle(data_batch, self.rotate_angle_deg/180.0 * np.pi)
+
+            self.rotate_angle_deg += rotated_angle_deg
+
+        return data_batch
+
+
 
 class ShapeNetPartPointsDataset:
     def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True, normalize=False, split='train', extra_ply_point_clouds_list=None, random_seed=None):
@@ -219,12 +312,189 @@ class ShapeNetPartPointsDataset:
 
         return noisy_batch, data_batch
 
+    def aug_data_batch(self, data_batch, scale_low=0.8, scale_high=1.25, rot=True, snap2ground=True, trans=0.1):
+        res_batch = data_batch
+        if True:
+            res_batch = provider.random_scale_point_cloud(data_batch, scale_low=scale_low, scale_high=scale_high)
+        if rot:
+            res_batch = provider.rotate_point_cloud(res_batch)
+        if snap2ground:
+            res_batch = provider.lift_point_cloud_to_ground(res_batch)
+        if trans is not None:
+            res_batch = provider.shift_point_cloud(res_batch, shift_range=trans)
+        return res_batch
+
     def get_npoint(self):
         return self.npoint
 
-if __name__=='__main__':
+import trimesh
+class RealWorldPointsDataset:
+    def __init__(self, mesh_dir, batch_size=50, npoint=2048, shuffle=True, split='train', random_seed=None):
+        '''
+        part_point_cloud_dir: the directory contains the oringal ply point clouds
+        batch_size:
+        npoint: a fix number of points that will sample from the point clouds
+        shuffle: whether to shuffle the order of point clouds
+        normalize: whether to normalize the point clouds
+        split: 
+        extra_ply_point_clouds_list: a list contains some extra point cloud file names, 
+                                     note that only use it in test time, 
+                                     these point clouds will be inserted in front of the point cloud list,
+                                     which means extra clouds get to be tested first
+        random_seed: 
+        '''
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.mesh_dir = mesh_dir
+        self.npoint = npoint
+        self.split = split
+        self.random_seed = random_seed
 
+        # make a random generator
+        self.rand_gen = RandomState(self.random_seed)
+        #self.rand_gen = np.random
+
+        # list of meshes
+        self.meshes = self._read_all_meshes(self.mesh_dir) # a list of trimeshes
+        self._preprocess_meshes(self.meshes)
+
+        self.point_clouds = self._pre_sample_points(self.meshes)
+
+        self.reset()
+
+    def _shuffle_list(self, l):
+        self.rand_gen.shuffle(l)
+    
+    def _preprocess_meshes(self, meshes):
+        '''
+        currently, just normalize all meshes, according to the height
+        also, snap chairs to the ground
+        '''
+
+        max_height = -1
+
+        for mesh in meshes:
+            bbox = mesh.bounding_box # 8 pts
+            height = np.max(bbox.vertices[:,1])
+
+            if height > max_height:
+                max_height = height
+            
+        for mesh in meshes:
+            bbox = mesh.bounding_box # 8 pts
+            height = np.max(bbox.vertices[:,1])
+            scale_factor = height / max_height
+
+            bbox_center = np.mean(bbox.vertices, axis=0)
+            bbox_center[1] = height / 2.0 # assume that the object is alreay snapped to ground
+
+            trans_v = -bbox_center 
+            trans_v[1] += mesh.bounding_box.extents[1]/2.
+            mesh.apply_translation(trans_v) # center bbox center to ori
+
+            mesh.apply_scale(scale_factor)
+
+        return 0
+    
+    def _read_all_meshes(self, mesh_dir):
+        meshes_cache_filename = os.path.join(os.path.dirname(mesh_dir), 'meshes_cache_%s.pickle'%(self.split))
+
+        if os.path.exists(meshes_cache_filename):
+            print('Loading cached pickle file: %s'%(meshes_cache_filename))
+            p_f = open(meshes_cache_filename, 'rb')
+            mesh_list = pickle.load(p_f)
+            p_f.close()
+        else:
+            split_filename = os.path.join(os.path.dirname(mesh_dir), os.path.basename(mesh_dir)+'_%s_split.pickle'%(self.split))
+            with open(split_filename, 'rb') as pf:
+                mesh_name_list = pickle.load(pf)
+            mesh_filenames = []
+            for mesh_n in mesh_name_list:
+                mesh_filenames.append(os.path.join(mesh_dir, mesh_n))
+            mesh_filenames.sort() # NOTE: sort the file names here!
+
+            print('Reading and caching...')
+            mesh_list = []
+            for mn in tqdm(mesh_filenames):
+                m_fn = os.path.join(mesh_dir, mn)
+                mesh = trimesh.load(m_fn)
+            
+                mesh_list.append(mesh)
+            
+            p_f = open(meshes_cache_filename, 'wb')
+            pickle.dump(mesh_list, p_f)
+            print('Cache to %s'%(meshes_cache_filename))
+            p_f.close()
+
+        return mesh_list
+
+    def _pre_sample_points(self, meshes):
+        presamples_cache_filename = os.path.join(os.path.dirname(self.mesh_dir), 'presamples_cache_%s.pickle'%(self.split))
+        if os.path.exists(presamples_cache_filename):
+            print('Loading cached pickle file: %s'%(presamples_cache_filename))
+            p_f = open(presamples_cache_filename, 'rb')
+            points_list = pickle.load(p_f)
+            p_f.close()
+        else:
+            print('Pre-sampling...')
+            points_list = []
+            for m in tqdm(meshes):
+                samples, _ = trimesh.sample.sample_surface_even(m, self.npoint * 10)
+                points_list.append(np.array(samples))
+
+            p_f = open(presamples_cache_filename, 'wb')
+            pickle.dump(points_list, p_f)
+            p_f.close()
+
+            print('Pre-sampling done and cached.')
+
+        return points_list
+
+    def reset(self):
+        self.batch_idx = 0
+        if self.shuffle:
+            self._shuffle_list(self.meshes)
+
+    def has_next_batch(self):
+        num_batch = np.floor(len(self.meshes) / self.batch_size)
+        if self.batch_idx < num_batch:
+            return True
+        return False
+    
+    def next_batch(self):
+        start_idx = self.batch_idx * self.batch_size
+        end_idx = (self.batch_idx+1) * self.batch_size
+
+        data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        for i in range(start_idx, end_idx):
+            pc_cur = self.point_clouds[i] # M x 3
+            choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
+            idx_cur = i % self.batch_size
+            data_batch[idx_cur] = pc_cur[choice_cur, :]
+
+        self.batch_idx += 1
+        return data_batch
+
+    def get_npoint(self):
+        return self.npoint
+
+
+if __name__=='__main__':
+    REALDATASET = RealWorldPointsDataset('/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud', batch_size=6, npoint=2048,  shuffle=False, split='trainval', random_seed=0)
+
+    data_batch = REALDATASET.next_batch()
+    pc_util.write_ply(data_batch[0], 'real_data.ply')
+    pc_util.write_ply(data_batch[1], 'real_data_1.ply')
+    pc_util.write_ply(data_batch[2], 'real_data_2.ply')
+
+    '''
     TRAIN_DATASET = ShapeNetPartPointsDataset('/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean', batch_size=6, npoint=8192, normalize=False, shuffle=False, split='test', random_seed=0)
+
+    data_batch = TRAIN_DATASET.next_batch()
+    pc_util.write_ply(data_batch[0], 'data.ply')
+    data_batch = TRAIN_DATASET.aug_data_batch(data_batch, rot=False, trans=False)
+    pc_util.write_ply(data_batch[0], 'data_aug.ply')
+
 
     noisy_partial_data_batch = TRAIN_DATASET.next_batch_noise_added_with_partial(partial_portion=1)
     pc_util.write_ply(noisy_partial_data_batch[0], 'test_noisy_partial.ply')
@@ -233,6 +503,7 @@ if __name__=='__main__':
 
     noisy_partial_data_batch = TEST_DATASET.next_batch_noise_added_with_partial(partial_portion=1)
     pc_util.write_ply(noisy_partial_data_batch[0], 'test_noisy_partial_1.ply')
+    '''
 
     '''
     epoch = 10

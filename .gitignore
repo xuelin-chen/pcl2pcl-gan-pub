@@ -11,3 +11,4 @@
 *.jpeg
 *.pickle
 *.ply
+**/tmp*

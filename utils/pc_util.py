@@ -433,6 +433,18 @@ def point_cloud_center2ori(points):
     center = np.mean(points, axis=0)
     points = points - center
     return points
+def point_cloud_bottom_center2ori(points):
+    '''
+    input: points - Nx3
+    '''
+    pts_min = np.amin(points, axis=0, keepdims=True)
+    pts_max = np.amax(points, axis=0, keepdims=True)
+    bbox_center = (pts_min + pts_max) / 2.0
+    bbox_center[:,1] = 0
+
+    res_pts = points - bbox_center
+
+    return res_pts
 
 def point_bbox(point_clouds):
     '''

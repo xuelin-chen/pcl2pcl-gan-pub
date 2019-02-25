@@ -61,12 +61,12 @@ def add_point_cloud_mesh_to_scene(point_cloud, scene, pose):
     pc_node = scene.add(mn, pose=pose)
     return pc_node
 
-def get_all_filnames(dir, nb=50):
+def get_all_filnames(dir, nb=30):
     all_filenames = [ os.path.join(dir, f) for f in os.listdir(dir)]
     all_filenames.sort()
     return all_filenames[:nb]
 
-def render_big_gallery(results_dir):
+def render_big_gallery(results_dir, nb=30):
     '''
     return np array of a big image
     '''
@@ -80,7 +80,7 @@ def render_big_gallery(results_dir):
     _ = scene.add(cam, pose=cam_pose)
     _ = scene.add(point_l, pose=cam_pose)
 
-    input_ply_filenames = get_all_filnames(results_dir)
+    input_ply_filenames = get_all_filnames(results_dir, nb)
 
     r = OffscreenRenderer(viewport_width=640*2, viewport_height=480*2, point_size=5)
     pc_pose = get_transformation_matrix(0,125,0,0,0,-1)
@@ -103,20 +103,25 @@ def render_big_gallery(results_dir):
     return big_gallery
 
 if __name__=='__main__':
+    nb_chairs_to_show = 48
 
-    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_m1850_rotation_np2c_test_2019-02-20-11-41-32'
-    test_results_log_dir_2 = '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_np2c_dualAE_rotation_test_2019-02-20-11-37-03'
+    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_test_real_pcl2pcl_gan_snap_scale_HD_2019-02-25-13-42-52'
+    #test_results_log_dir_2 = '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_np2c_dualAE_rotation_test_2019-02-20-11-37-03'
 
-    input_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','input'))
-    recon_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'))
+    input_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','input'), nb_chairs_to_show)
+    recon_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), nb_chairs_to_show)
 
-    input_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud','input'))
-    recon_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud', 'reconstruction'))
+    big_1_im = np.concatenate([input_color_arr_1, recon_color_arr_1], axis=1)
+    big_1_img = Image.fromarray(big_1_im)
+    big_1_img.save('real_pcl2pcl_snap_scale_HD.png')
 
-    bi_im = np.concatenate([input_color_arr_1, recon_color_arr_1, input_color_arr_2, recon_color_arr_2], axis=1)
+    #input_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud','input'))
+    #recon_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud', 'reconstruction'))
 
-    big_img = Image.fromarray(bi_im)
-    big_img.save('n2n_vs_ours_rotation_test.png')
+    #bi_im = np.concatenate([input_color_arr_1, recon_color_arr_1, input_color_arr_2, recon_color_arr_2], axis=1)
+
+    #big_img = Image.fromarray(bi_im)
+    #big_img.save('n2n_vs_ours_rotation_test.png')
 
 
     

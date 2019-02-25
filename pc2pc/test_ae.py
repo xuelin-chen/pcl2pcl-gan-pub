@@ -24,14 +24,15 @@ import shapenet_pc_dataset
 import autoencoder
 
 para_config = {
-    'exp_name': 'ae_chair_m1850',
-    'random_seed': 0, # None for totally random
-    'ae_type': 'np2c', # 'c2c', 'n2n', 'np2np', 'np2c'
+    'exp_name': 'ae_chair_c2c_rand_orient',
+    'random_seed': None, # None for totally random
+    'ae_type': 'c2c', # 'c2c', 'n2n', 'np2np', 'np2c'
+    'data_aug': True, # if to enable the data augmentation
 
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
     'extra_point_clouds_list': None,
 
-    'ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt' ,
+    'ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_data_aug_c2c_2019-02-18-14-37-50/ckpts/model_1600.ckpt' ,
 
     ########################## the paras below should be exactly the same with those of training #######################################
 
@@ -66,7 +67,7 @@ para_config = {
 }
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_ae', 'log_' + para_config['exp_name'] +'_'+ para_config['ae_type'] +'_test_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_ae', 'log_test_' + para_config['exp_name'] +'_'+ para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 
 script_name = os.path.basename(__file__)
@@ -93,7 +94,7 @@ def test():
         with tf.device('/gpu:'+str(0)):
             ae = autoencoder.AutoEncoder(paras=para_config)
 
-            reconstr_loss, reconstr, latent_code = ae.model()
+            _, reconstr, latent_code = ae.model()
 
             saver = tf.train.Saver()
 
@@ -135,6 +136,10 @@ def test():
                 else:
                     log_string('Unknown ae type: %s'%(para_config['ae_type']))
                     exit
+                
+                if para_config['data_aug'] == True:
+                    input_batch_test = TEST_DATASET.aug_data_batch(input_batch_test)
+                    gt_batch_test = input_batch_test
                 
                 latent_code_val_test, reconstr_val_test, eval_loss_val_test = sess.run([latent_code, reconstr, ae.eval_loss],
                                                                 feed_dict={

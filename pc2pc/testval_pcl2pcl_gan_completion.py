@@ -18,27 +18,25 @@ print('ROOT_DIR: ', ROOT_DIR)
 sys.path.append(BASE_DIR) # model
 sys.path.append(ROOT_DIR) # provider
 sys.path.append(os.path.join(ROOT_DIR, 'utils'))
-import provider
 import tf_util
 import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
+cat_name = 'plane'
+pts_remove_percentage = 0.5
+partial_portion = 1.0
+
 # paras for autoencoder
 para_config_gan = {
-    'exp_name': 'real_pcl2pcl_renormed_m4100',
-    'random_seed': None, # None for totally random
+    'exp_name': '%s_pcl2pcl_gan_%d-percentage'%(cat_name, pts_remove_percentage*100),
+    'random_seed': 0, # None for totally random
 
-    'real_point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
+    #'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
+    #'extra_point_clouds_list': ['data/0_extra.ply', 'data/1_extra.ply'],
+    'extra_point_clouds_list': None,
 
-    # noisy AE, clean AE and pcl2pcl gan checkpoint model
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_data_aug_c2c_2019-02-26-17-49-01/ckpts/model_1280.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_c2c_2019-02-26-17-37-38/ckpts/model_1670.ckpt',
-
-    'pcl2pcl_gan_ckpt': '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_real_pcl2pcl_gan_renormed_2019-02-27-11-51-18/ckpts/model_4100.ckpt',
-
-    'batch_size': 48, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
+    'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,
@@ -47,12 +45,21 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
-    #'loss': 'emd',
-    'loss': 'hausdorff',
+    'loss': 'emd',
+    #'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
-    #'eval_loss': 'emd',
-    'eval_loss': 'hausdorff',
+    'eval_loss': 'emd',
+    #'eval_loss': 'hausdorff',
     #'eval_loss': 'chamfer',
+
+    # noise parameters
+    'noise_mu': 0.0, 
+    'noise_sigma': 0.01, 
+    #'r_min': 0.1, 
+    #'r_max': 0.25, 
+    'p_min': pts_remove_percentage,
+    'p_max': pts_remove_percentage,
+    'partial_portion': partial_portion, # 0.25 by default in training
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -84,11 +91,27 @@ para_config_ae = {
     'activation_fn': tf.nn.relu,
 }
 
-NOISY_TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config_gan['real_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test')
+if cat_name == 'chair':
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
+    #para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-19-18/ckpts/model_410.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_emd_2019-03-02-19-21-15/ckpts/model_1320.ckpt'
+elif cat_name == 'table':
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-41-36/ckpts/model_300.ckpt'
+elif cat_name == 'motorbike':
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/pcl2pcl/log_motorbike_pcl2pcl_gan_percentage_hausdorff_2019-03-04-20-54-10/ckpts/model_870.ckpt'
+elif cat_name == 'plane':
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_percentage_hausdorff_2019-03-05-10-55-54/ckpts/model_980.ckpt'
+
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config_gan['extra_point_clouds_list'], random_seed=para_config_gan['random_seed'], preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_pcl2pcl', 'log_test_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
+LOG_DIR = os.path.join('run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+print(LOG_DIR)
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -141,11 +164,11 @@ def test():
 
             all_inputs = []
             all_recons = []
+            all_gt = []
             all_eval_losses = []
             while NOISY_TEST_DATASET.has_next_batch():
 
-                noise_cur = NOISY_TEST_DATASET.next_batch()
-                clean_cur = noise_cur
+                noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], p_min=para_config_gan['p_min'], p_max=para_config_gan['p_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
 
                 feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
@@ -156,11 +179,13 @@ def test():
 
                 all_inputs.extend(noise_cur)
                 all_recons.extend(fake_clean_reconstr_val)
+                all_gt.extend(clean_cur)
                 all_eval_losses.append(eval_losses_val)
 
             NOISY_TEST_DATASET.reset()
 
             pc_util.write_ply_batch(np.asarray(all_inputs), os.path.join(LOG_DIR, 'pcloud', 'input'))
+            pc_util.write_ply_batch(np.asarray(all_gt), os.path.join(LOG_DIR, 'pcloud', 'gt'))
             pc_util.write_ply_batch(np.asarray(all_recons), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
             print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))

@@ -6,6 +6,7 @@ Date: November 2016
 
 import os
 import sys
+import math
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(BASE_DIR)
 
@@ -352,7 +353,7 @@ def read_all_ply_under_dir(dir):
     
     point_clouds = []
     for ply_f in tqdm(ply_filenames):
-        pc = read_ply(ply_f)
+        pc = read_ply_xyz(ply_f)
         point_clouds.append(pc)
     
     return point_clouds
@@ -363,7 +364,7 @@ def read_ply_from_file_list(file_list):
     '''
     point_clouds = []
     for ply_f in tqdm(file_list):
-        pc = read_ply(ply_f)
+        pc = read_ply_xyz(ply_f)
         point_clouds.append(pc)
     
     return point_clouds
@@ -464,9 +465,9 @@ def point_bbox_center(point_clouds):
     pts_max = np.amax(point_clouds, axis=1, keepdims=True)
     return (pts_min + pts_max) / 2.0
 
-def point_cloud_normalized(point_clouds, tol=0.05):
+def point_cloud_normalized(point_clouds, tol=0.0):
     '''
-    normalize the point cloud into cube [-1,1]
+    normalize the point cloud into a unit cube [-.5,.5] centered at the original
     move point cloud center to original point
     input point_clouds: BxNx3, np array
     tol: leave a margin
@@ -475,7 +476,7 @@ def point_cloud_normalized(point_clouds, tol=0.05):
 
     bbox_size = pts_max - pts_min # B x 1 x 3
     
-    scale_factor = (2.0 - tol) / np.amax(np.squeeze(bbox_size), axis=-1)
+    scale_factor = (1.0 - tol) / np.amax(np.squeeze(bbox_size), axis=-1)
     scale_factor = np.expand_dims(scale_factor, axis=-1)
     scale_factor = np.expand_dims(scale_factor, axis=-1)
 
@@ -506,6 +507,22 @@ def add_gaussian_noise(points, noise_mu=0, noise_sigma=0.0012):
     g_noise = np.random.normal(noise_mu, noise_sigma, points.shape)
     noisy_points = points + g_noise
     return noisy_points
+
+def rotate_point_cloud(points, transformation_mat):
+
+    new_points = np.dot(transformation_mat, points.T).T
+
+    return new_points
+
+def rotate_point_cloud_by_axis_angle(points, axis, angle_deg):
+
+    angle = math.radians(angle_deg)
+    rot_m = pymesh.Quaternion.fromAxisAngle(axis, angle)
+    rot_m = rot_m.to_matrix()
+
+    new_points = rotate_point_cloud(points, rot_m)
+
+    return new_points
 
 # ----------------------------------------
 # Simple Point cloud and Volume Renderers

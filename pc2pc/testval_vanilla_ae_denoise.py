@@ -23,12 +23,10 @@ import pc_util
 import shapenet_pc_dataset
 import autoencoder
 
-cat_name = 'chair'
-pts_remove_percentage = 0.5
-partial_portion = 1.0
+cat_name = 'motorbike'
 
 para_config = {
-    'exp_name': 'ae_%s'%(cat_name),
+    'exp_name': 'ae_%s_0-partial'%(cat_name),
     'random_seed': 0, # None for totally random
     'ae_type': 'np2c', # 'c2c', 'n2n', 'np2np', 'np2c'
     
@@ -37,7 +35,7 @@ para_config = {
 
     ########################## the paras below should be exactly the same with those of training #######################################
 
-    'batch_size': 24, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
+    'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0005,
     'epoch': 2000,
     'output_interval': 10, # unit in batch
@@ -50,9 +48,9 @@ para_config = {
     'noise_sigma': 0.01, 
     #'r_min': 0.1, 
     #'r_max': 0.25, 
-    'p_min': pts_remove_percentage,
-    'p_max': pts_remove_percentage,
-    'partial_portion': partial_portion, # 0.25 by default in training
+    'p_min': 0.05,
+    'p_max': 0.5,
+    'partial_portion': 0.0, # 0.25 by default in training
 
     # encoder
     'latent_code_dim': 128,
@@ -71,11 +69,20 @@ para_config = {
 
 if cat_name == 'chair':
     para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
-    para_config['ckpt'] = ''
+    para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt'
+elif cat_name == 'table':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
+    para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_c2c_2019-02-28-14-52-10/ckpts/model_1810.ckpt'
+elif cat_name == 'plane':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
+    para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_c2c_2019-03-04-16-22-26/ckpts/model_1820.ckpt'
+elif cat_name == 'motorbike':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
+    para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_c2c_2019-03-04-16-58-49/ckpts/model_1980.ckpt'
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_%s'%(cat_name), 'ae_test', 'log_test_' + para_config['exp_name'] +'_'+ para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+LOG_DIR = os.path.join('run_%s'%(cat_name), 'vanilla_ae_test', 'log_test_' + para_config['exp_name'] +'_'+ para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['autoencoder.py', 
@@ -125,6 +132,7 @@ def test():
             TEST_DATASET.reset()
             all_reconstr_clouds_test = []
             all_input_clouds_test = []
+            all_gt_test = []
             all_latent_codes_test = []
             eval_loss_mean_test = []
             while TEST_DATASET.has_next_batch():
@@ -136,10 +144,10 @@ def test():
                     input_batch_test = TEST_DATASET.next_batch_noise_added(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'])
                     gt_batch_test = input_batch_test
                 elif para_config['ae_type'] == 'np2np':
-                    input_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                    input_batch_test = TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], p_min=para_config['p_min'], p_max=para_config['p_max'], partial_portion=para_config['partial_portion'])
                     gt_batch_test = input_batch_test
                 elif para_config['ae_type'] == 'np2c':
-                    input_batch_test, gt_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'], with_gt=True)
+                    input_batch_test, gt_batch_test = TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], p_min=para_config['p_min'], p_max=para_config['p_max'], partial_portion=para_config['partial_portion'], with_gt=True)
                 else:
                     log_string('Unknown ae type: %s'%(para_config['ae_type']))
                     exit
@@ -158,6 +166,7 @@ def test():
 
                 all_reconstr_clouds_test.extend(reconstr_val_test)
                 all_input_clouds_test.extend(input_batch_test)
+                all_gt_test.extend(gt_batch_test)
                 all_latent_codes_test.extend(latent_code_val_test)
                 eval_loss_mean_test.append(eval_loss_val_test)
             
@@ -165,6 +174,7 @@ def test():
             
             # write out
             pc_util.write_ply_batch(np.asarray(all_reconstr_clouds_test), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
+            pc_util.write_ply_batch(np.asarray(all_gt_test), os.path.join(LOG_DIR, 'pcloud', 'gt'))
             pc_util.write_ply_batch(np.asarray(all_input_clouds_test), os.path.join(LOG_DIR, 'pcloud', 'input'))
             latent_pickle_file = open(os.path.join(LOG_DIR, 'latent_codes.pickle'), 'wb')
             pickle.dump(np.asarray(all_latent_codes_test), latent_pickle_file)

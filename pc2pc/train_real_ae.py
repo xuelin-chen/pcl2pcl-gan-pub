@@ -24,7 +24,7 @@ import autoencoder
 
 # paras for autoencoder on all chairs
 para_config = {
-    'exp_name': 'ae_chair_real_normed',
+    'exp_name': 'real_ae_chair',
     'random_seed': None,
 
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
@@ -55,12 +55,11 @@ para_config = {
     'activation_fn': tf.nn.relu,
 }
 
-
 TRAIN_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval')
 TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test')
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_ae', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_ae_renorm', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 
 script_name = os.path.basename(__file__)
@@ -162,6 +161,8 @@ def train():
                 # test on whole test dataset
                 sess.run(reset_metrics)
                 TEST_DATASET.reset()
+                all_recon_test = []
+                all_input_test = []
                 while TEST_DATASET.has_next_batch():
 
                     input_batch_test = TEST_DATASET.next_batch()
@@ -172,6 +173,8 @@ def train():
                                                                                 ae.is_training: False
                                                                               }
                                                                     )
+                    all_recon_test.extend(reconstr_val_test)
+                    all_input_test.extend(input_batch_test)
 
                 log_string('--------- on test split: --------')
                 reconstr_loss_mean_val, summary_test = sess.run([reconstr_loss_mean, summary_test_op])
@@ -183,8 +186,8 @@ def train():
                 test_writer.flush()
 
                 # write out only one (last) batch for check
-                pc_util.write_ply_batch(np.asarray(reconstr_val_test), os.path.join(LOG_DIR, 'pcloud', 'reconstr_%d'%(ep_idx)))
-                pc_util.write_ply_batch(np.asarray(input_batch_test), os.path.join(LOG_DIR, 'pcloud', 'input_%d'%(ep_idx)))
+                pc_util.write_ply_batch(np.asarray(all_recon_test), os.path.join(LOG_DIR, 'pcloud', 'reconstr_%d'%(ep_idx)))
+                pc_util.write_ply_batch(np.asarray(all_input_test), os.path.join(LOG_DIR, 'pcloud', 'input'))
 
                 # save model
                 save_path = saver.save(sess, os.path.join(LOG_DIR, 'ckpts', 'model_%d.ckpt'%(ep_idx)))

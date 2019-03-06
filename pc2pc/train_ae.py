@@ -22,36 +22,41 @@ import pc_util
 import shapenet_pc_dataset
 import autoencoder
 
-# paras for autoencoder on all chairs
+cat_name = 'car'
+
 para_config = {
-    'exp_name': 'ae_chair_aug_snap',
+    'exp_name': 'ae_%s_percentage'%(cat_name),
     'random_seed': None,
-    'ae_type': 'c2c', # 'c2c', 'n2n', 'np2np'
+    'ae_type': 'np2np', # 'c2c', 'n2n', 'np2np'
 
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
-
-    'batch_size': 50,
+    #'preprocess_data': False, # flag for preprocess of the data, which includes snap and normalization. True for real data exp, False for synthetic data exp
+    'batch_size': 200,
     'lr': 0.0005, # base starting learning rate
-    'decay_step': 5000000, # in samples, ~800 epoches
+    #'decay_step': 7000000, # in samples, for chair data: 5000000 (~800 epoches), for table data: 7000000 (~800 epoches) 
     'decay_rate': 0.5,
     'clip_lr': 0.0001, # minimal learning rate for clipping lr
     'epoch': 2001,
-    'output_interval': 50, # unit in batch
+    #'output_interval': 10, # unit in batch
     'save_interval': 10, # unit in epoch
     
     'loss': 'emd',
-    'data_aug': {'scale_low': 1.0,
-                 'scale_high': 1.0,
-                 'rot': False,
-                 'snap2ground': True,
-                 'trans': None,
-                },
+    
+    #'data_aug': {'scale_low': 0.9,
+    #             'scale_high': 1.1,
+    #             'rot': False,
+    #             'snap2ground': False,
+    #             'trans': 0.1,
+    #            },
+    
+    'data_aug': None,
 
     # noise parameters
     'noise_mu': 0.0, 
     'noise_sigma': 0.01, 
-    'r_min': 0.1, 
-    'r_max': 0.25, 
+    #'r_min': 0.1, 
+    #'r_max': 0.25, 
+    'p_min': 0.05,
+    'p_max': 0.5,
     'partial_portion': 0.25,
 
     # encoder
@@ -69,13 +74,35 @@ para_config = {
     'activation_fn': tf.nn.relu,
 }
 
+if cat_name == 'chair':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
+    para_config['decay_step'] = 5000000
+    para_config['output_interval'] = 30
+elif cat_name == 'table':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
+    para_config['decay_step'] = 7000000
+    para_config['output_interval'] = 30
+elif cat_name == 'plane':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
+    para_config['decay_step'] = 3500000
+    para_config['output_interval'] = 10
+elif cat_name == 'motorbike':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
+    para_config['decay_step'] = 250000
+    para_config['output_interval'] = 1
+    para_config['batch_size'] = 30 # only have 300+ motorbikes, use small batch size.
+elif cat_name == 'car':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
+    para_config['decay_step'] = 3000000
+    para_config['output_interval'] = 10
 
-TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval')
-TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test')
+TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
+TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test', preprocess=False)
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+LOG_DIR = os.path.join('run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+print(LOG_DIR)
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['autoencoder.py', 
@@ -153,7 +180,8 @@ def train():
                 elif para_config['ae_type'] == 'n2n':
                     input_batch = TRAIN_DATASET.next_batch_noise_added(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'])
                 elif para_config['ae_type'] == 'np2np':
-                    input_batch = TRAIN_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                    #input_batch = TRAIN_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                    input_batch = TRAIN_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], p_min=para_config['p_min'], p_max=para_config['p_max'], partial_portion=para_config['partial_portion'])
                 else:
                     log_string('Unknown ae type: %s'%(para_config['ae_type']))
                     exit
@@ -194,7 +222,8 @@ def train():
                     elif para_config['ae_type'] == 'n2n':
                         input_batch_test = TEST_DATASET.next_batch_noise_added(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'])
                     elif para_config['ae_type'] == 'np2np':
-                        input_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                        #input_batch_test = TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], r_min=para_config['r_min'], r_max=para_config['r_max'], partial_portion=para_config['partial_portion'])
+                        input_batch_test = TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config['noise_mu'], noise_sigma=para_config['noise_sigma'], p_min=para_config['p_min'], p_max=para_config['p_max'], partial_portion=para_config['partial_portion'])
                     else:
                         log_string('Unknown ae type: %s'%(para_config['ae_type']))
                         exit
@@ -226,8 +255,6 @@ def train():
                 save_path = saver.save(sess, os.path.join(LOG_DIR, 'ckpts', 'model_%d.ckpt'%(ep_idx)))
                 log_string("Model saved in file: %s" % save_path)
             
-                       
-           
 if __name__ == "__main__":
     log_string('pid: %s'%(str(os.getpid())))
     train()

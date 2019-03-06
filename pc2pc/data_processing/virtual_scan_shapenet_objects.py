@@ -13,10 +13,12 @@ import pc_util
 ############################ useful vars ############################
 SHAPENET_V2_PATH = '/workspace/dataset/ShapeNetCore.v2'
 #cat_synset_id = '03001627' # chair synset number for a specific category in shapnetv2
-#cat_synset_id = '02691156' # plane
-cat_synset_id = '04379243' # table
+#cat_synset_id = '02691156' # airplane
+#cat_synset_id = '04379243' # table
+#cat_synset_id = '03790512' # motorcycle
+cat_synset_id = '02958343' # car
 
-OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v2_point_cloud', cat_synset_id)
+OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v2_point_cloud', cat_synset_id, 'point_cloud_clean')
 
 EXE_VIRTUAL_SCANNER = '/workspace/pcl/build/bin/pcl_virtual_scanner'
 VERT_DEGREE_RES = 0.125
@@ -94,6 +96,9 @@ def virtual_scane_one_model(model_dir, worker_id):
     cam_view_points, cam_target_points = generate_camera_view_target_points()
 
     model_filename = os.path.join(model_dir, 'models/model_normalized.obj')
+    if not os.path.exists(model_filename):
+        print('File not found: %s'%(model_filename))
+        return
     model_basename = os.path.basename(model_dir)
 
     ply_tmp_name = os.path.join(TMP_DATA_PATH, tmp_model_name)

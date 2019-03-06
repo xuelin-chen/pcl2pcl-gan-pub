@@ -25,14 +25,14 @@ import shapenet_pc_dataset
 
 
 para_config_gan = {
-    'exp_name': 'real_pcl2pcl_gan_noisy_normed_clean_snap',
+    'exp_name': 'real_pcl2pcl_gan_renormed_data_aug',
     'random_seed': None,
 
     'real_point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
     'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
 
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_real_normed_2019-02-25-21-38-00/ckpts/model_690.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae/log_ae_chair_aug_snap_c2c_2019-02-22-19-19-27/ckpts/model_1850.ckpt',
+    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_data_aug_c2c_2019-02-26-17-49-01/ckpts/model_1280.ckpt',
+    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_c2c_2019-02-26-17-37-38/ckpts/model_1670.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,
@@ -49,12 +49,13 @@ para_config_gan = {
     #'eval_loss': 'emd',
     'eval_loss': 'hausdorff',
 
-    'clean_data_aug': {'scale_low': 1.0,
-                        'scale_high': 1.0,
+    'clean_data_aug': {'scale_low': 0.9,
+                        'scale_high': 1.1,
                         'rot': False,
-                        'snap2ground': True,
-                        'trans': None,
+                        'snap2ground': False,
+                        'trans': 0.1,
                         },
+    #'clean_data_aug': None,
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -93,12 +94,12 @@ NOISY_TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config_gan[
 #################### dirs, code backup and etc for this run ##########################
 LOG_DIR = os.path.join('run_pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
-if not os.path.exists(os.path.join(LOG_DIR, 'fake_cleans')): os.mkdir(os.path.join(LOG_DIR, 'fake_cleans'))
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
                  script_name,  
-                 'latent_generator_discriminator.py']
+                 'latent_generator_discriminator.py',
+                 'shapenet_pc_dataset.py']
 for bf in bk_filenames:
     os.system('cp %s %s' % (bf, LOG_DIR))
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')

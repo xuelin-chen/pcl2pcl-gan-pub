@@ -23,7 +23,7 @@ import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
-cat_name = 'car'
+cat_name = 'chair'
 loss = 'hausdorff'
 
 para_config_gan = {
@@ -76,9 +76,21 @@ para_config_ae = {
 }
 
 if cat_name == 'chair':
-    print()
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/03001627/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/03001627/point_cloud'
+
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/ae/log_3DEPN_ae_chair_2019-03-06-16-08-06/ckpts/model_420.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt'
+
 elif cat_name == 'table':
-    print()
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/04379243/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/04379243/point_cloud'
+
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/ae/log_3DEPN_ae_table_2019-03-06-16-10-10/ckpts/model_485.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_np2np_2019-02-28-16-38-21/ckpts/model_1810.ckpt'
+
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'

@@ -518,7 +518,7 @@ class ShapeNet_3DEPN_PointsDataset:
                 pc_cur = self.point_clouds[i_tmp]
             else:
                 pc_cur = self.point_clouds[i] # M x 3
-                
+
             choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
             idx_cur = i % self.batch_size
             data_batch[idx_cur] = pc_cur[choice_cur, :]
@@ -682,7 +682,7 @@ class RealWorldPointsDataset:
             self._shuffle_list(self.meshes)
 
     def has_next_batch(self):
-        num_batch = np.floor(len(self.meshes) / self.batch_size)
+        num_batch = np.floor(len(self.meshes) / self.batch_size) + 1
         if self.batch_idx < num_batch:
             return True
         return False
@@ -693,7 +693,13 @@ class RealWorldPointsDataset:
 
         data_batch = np.zeros((self.batch_size, self.npoint, 3))
         for i in range(start_idx, end_idx):
-            pc_cur = self.point_clouds[i] # M x 3
+
+            if i >= len(self.point_clouds):
+                i_tmp = i % len(self.point_clouds)
+                pc_cur = self.point_clouds[i_tmp]
+            else:
+                pc_cur = self.point_clouds[i] # M x 3
+                
             choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
             idx_cur = i % self.batch_size
             data_batch[idx_cur] = pc_cur[choice_cur, :]

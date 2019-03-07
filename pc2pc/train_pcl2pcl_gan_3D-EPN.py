@@ -27,7 +27,7 @@ cat_name = 'car'
 loss = 'hausdorff'
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_percentage'%(cat_name),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN'%(cat_name),
     'random_seed': None,
 
     'recover_ckpt': None,
@@ -44,15 +44,6 @@ para_config_gan = {
     'loss': loss,
     'lambda': 1.0, # parameter on back-reconstruction loss
     'eval_loss': loss,
-
-    # noise parameters
-    'noise_mu': 0.0, 
-    'noise_sigma': 0.01, 
-    #'r_min': 0.1, 
-    #'r_max': 0.25, 
-    'p_min': 0.05,
-    'p_max': 0.5,
-    'partial_portion': 0.25,
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -85,39 +76,34 @@ para_config_ae = {
 }
 
 if cat_name == 'chair':
-    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
-    #para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_percent_np2np_2019-03-01-21-13-28/ckpts/model_1800.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt'
+    print()
 elif cat_name == 'table':
-    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
-    #para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_c2c_2019-02-28-14-52-10/ckpts/model_1910.ckpt'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_percent_np2np_2019-03-01-21-20-13/ckpts/model_1540.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_np2np_2019-02-28-16-38-21/ckpts/model_1810.ckpt'
+    print()
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_np2np_2019-03-04-16-22-53/ckpts/model_1810.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
+
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/ae/log_3DEPN_ae_plane_2019-03-05-22-32-15/ckpts/model_450.ckpt'
     para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_c2c_2019-03-04-16-22-26/ckpts/model_1820.ckpt'
 elif cat_name == 'motorbike':
-    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_percentage_np2np_2019-03-04-17-00-31/ckpts/model_1950.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_c2c_2019-03-04-16-58-49/ckpts/model_1980.ckpt'
+    print()
 elif cat_name == 'car':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/log_ae_car_percentage_np2np_2019-03-06-15-50-22/ckpts/model_1920.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
+
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/ae/log_3DEPN_ae_car_2019-03-06-22-51-09/ckpts/model_325.ckpt'
     para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/log_ae_car_percentage_c2c_2019-03-06-15-50-06/ckpts/model_1900.ckpt'
 
-NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
+NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
-NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', preprocess=False)
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-#LOG_DIR = os.path.join('run_chair', 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-#LOG_DIR = os.path.join('run_chair', 'pcl2pcl4real', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-LOG_DIR = os.path.join('run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
-#if not os.path.exists(os.path.join(LOG_DIR, 'fake_cleans')): os.mkdir(os.path.join(LOG_DIR, 'fake_cleans'))
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -235,9 +221,7 @@ def train():
                 sess.run(reset_metrics)
 
                 while NOISY_TRAIN_DATASET.has_next_batch() and CLEAN_TRAIN_DATASET.has_next_batch():
-
-                    #noise_cur = NOISY_TRAIN_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], r_min=para_config_gan['r_min'], r_max=para_config_gan['r_max'], partial_portion=para_config_gan['partial_portion'])
-                    noise_cur = NOISY_TRAIN_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], p_min=para_config_gan['p_min'], p_max=para_config_gan['p_max'], partial_portion=para_config_gan['partial_portion'])
+                    noise_cur = NOISY_TRAIN_DATASET.next_batch()
                     clean_cur = CLEAN_TRAIN_DATASET.next_batch()
 
                     feed_dict={
@@ -285,8 +269,8 @@ def train():
                     # test and evaluate on test set
                     NOISY_TEST_DATASET.reset()
                     while NOISY_TEST_DATASET.has_next_batch():
-                        #noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_added_with_partial(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], r_min=para_config_gan['r_min'], r_max=para_config_gan['r_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
-                        noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], p_min=para_config_gan['p_min'], p_max=para_config_gan['p_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
+                        noise_cur = NOISY_TEST_DATASET.next_batch()
+                        clean_cur = noise_cur
                         feed_dict={
                                     latent_gan.input_noisy_cloud: noise_cur,
                                     latent_gan.gt: clean_cur,

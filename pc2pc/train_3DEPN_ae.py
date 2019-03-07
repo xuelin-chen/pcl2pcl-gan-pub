@@ -22,7 +22,7 @@ import pc_util
 import shapenet_pc_dataset
 import autoencoder
 
-cat_name = 'plane'
+cat_name = 'car'
 
 para_config = {
     'exp_name': '3DEPN_ae_%s'%(cat_name),
@@ -69,7 +69,11 @@ elif cat_name == 'plane':
     para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
     para_config['decay_step'] = 5760000 # ~120 epochs
     para_config['output_interval'] = 10
-
+elif cat_name == 'car':
+    para_config['train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
+    para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
+    para_config['decay_step'] = 5760000 # ~120 epochs
+    para_config['output_interval'] = 10
 
 TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['train_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['test_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)

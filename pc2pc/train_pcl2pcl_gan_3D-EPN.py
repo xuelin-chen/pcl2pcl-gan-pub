@@ -23,7 +23,7 @@ import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
-cat_name = 'chair'
+cat_name = 'table'
 loss = 'hausdorff'
 
 para_config_gan = {

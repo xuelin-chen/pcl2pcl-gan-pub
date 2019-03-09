@@ -32,20 +32,16 @@ def convert_pc2df(points, resolution=32):
     x_grid_size, y_grid_size, z_grid_size = extents[0]/float(resolution), extents[1]/float(resolution), extents[2]/float(resolution)
 
     df_mat = np.zeros((resolution, resolution, resolution))
-    for x_i in range(resolution):
+    df_arr = []
+    for z_i in range(resolution):
         for y_i in range(resolution):
-            for z_i in range(resolution):
+            for x_i in range(resolution):
 
                 center_cur = get_cell_center(pts_min, x_i, y_i, z_i, x_grid_size, y_grid_size, z_grid_size)
 
                 nearest_dist, _ = tree.query(center_cur)
 
                 df_mat[x_i, y_i, z_i] = nearest_dist
-
-    return df_mat
-
-def convert_df2mesh(df_volume_data, out_filename, thre=0.02):
-    vs, fs, _, _ = measure.marching_cubes_lewiner(df_volume_data, 0.02)
-
-    final_mesh = trimesh.Trimesh(vertices=vs, faces=fs)
-    final_mesh.export(out_filename)
+                df_arr.append(nearest_dist)
+    df_arr = np.array(df_arr)
+    return df_mat, df_arr

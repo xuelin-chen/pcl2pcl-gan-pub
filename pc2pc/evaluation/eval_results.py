@@ -10,12 +10,13 @@ sys.path.append(os.path.join(ROOT_DIR, '../utils'))
 import pc_util
 
 thre = 0.03
-cat_name = 'motorbike'
-test_name = 'vanilla_ae_test'
+cat_name = 'car'
+#test_name = 'vanilla_ae_test'
 #test_name = 'N2N_ae_test'
-#test_name = 'pcl2pcl_test'
+test_name = 'pcl2pcl_test'
 #keyword2filter = '0-partial'
 keyword2filter = '-perc'
+#keyword2filter = 'redo'
 
 test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 

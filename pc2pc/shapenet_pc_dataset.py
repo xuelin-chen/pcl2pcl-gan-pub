@@ -425,12 +425,6 @@ class ShapeNet_3DEPN_PointsDataset:
 
         self.reset()
 
-    def _shuffle_array(self, arr):
-
-        idx = np.arange(arr.shape[0])
-        self.rand_gen.shuffle(idx)
-        return arr[idx, ...]
-
     def _shuffle_list(self, l):
         self.rand_gen.shuffle(l)
     
@@ -442,10 +436,10 @@ class ShapeNet_3DEPN_PointsDataset:
         split_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s_split.pickle'%(self.split))
         with open(split_filename, 'rb') as pf:
             pc_name_list = pickle.load(pf)
-        pc_filenames = []
+        self.pc_filenames = []
         for pc_n in pc_name_list:
-            pc_filenames.append(os.path.join(dir, pc_n))
-        pc_filenames.sort() # NOTE: sort the file names here!
+            self.pc_filenames.append(os.path.join(dir, pc_n))
+        self.pc_filenames.sort() # NOTE: sort the file names here!
 
         pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s.pickle'%(self.split))
         if os.path.exists(pickle_filename):
@@ -455,7 +449,7 @@ class ShapeNet_3DEPN_PointsDataset:
             p_f.close()
         else:
             print('Reading and caching pickle file.')
-            point_clouds = pc_util.read_ply_from_file_list(pc_filenames) # a list of arrays
+            point_clouds = pc_util.read_ply_from_file_list(self.pc_filenames) # a list of arrays
 
             # NOTE!!!: rotate the point clouds here, to align with our data
             for pc_id, pc in enumerate(point_clouds):
@@ -525,6 +519,32 @@ class ShapeNet_3DEPN_PointsDataset:
 
         self.batch_idx += 1
         return data_batch
+
+    def next_batch_with_name(self):
+        start_idx = self.batch_idx * self.batch_size
+        end_idx = (self.batch_idx+1) * self.batch_size
+
+        data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        name_batch = []
+        for bs_idx in range(self.batch_size):
+            name_batch.append('name_placeholder')
+        for i in range(start_idx, end_idx):
+
+            if i >= len(self.point_clouds):
+                i_tmp = i % len(self.point_clouds)
+                pc_cur = self.point_clouds[i_tmp]
+                pc_name_cur = self.pc_filenames[i_tmp].split('/')[-1]
+            else:
+                pc_cur = self.point_clouds[i] # M x 3
+                pc_name_cur = self.pc_filenames[i].split('/')[-1]
+
+            choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
+            idx_cur = i % self.batch_size
+            data_batch[idx_cur] = pc_cur[choice_cur, :]
+            name_batch[idx_cur] = pc_name_cur
+
+        self.batch_idx += 1
+        return data_batch, name_batch
 
     def get_npoint(self):
         return self.npoint

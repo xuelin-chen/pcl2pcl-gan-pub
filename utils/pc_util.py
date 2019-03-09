@@ -422,6 +422,14 @@ def write_ply_batch(point_cloud_batch, out_dir):
         pc_name = os.path.join(out_dir, '%d.ply'%(pidx))
         write_ply(pc, pc_name)
 
+def write_ply_batch_with_name(point_cloud_batch, name_batch, out_dir):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    
+    for pidx, pc in enumerate(point_cloud_batch):
+        pc_name = os.path.join(out_dir, name_batch[pidx])
+        write_ply(pc, pc_name)
+
 # ----------------------------------------
 # Point Cloud Manipulation
 # ----------------------------------------

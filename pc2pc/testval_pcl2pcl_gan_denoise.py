@@ -23,14 +23,13 @@ import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
-cat_name = 'plane'
+cat_name = 'table'
 
 # paras for autoencoder
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_0-partial'%(cat_name),
+    'exp_name': '%s_pcl2pcl_gan_0-partial_redo'%(cat_name),
     'random_seed': 0, # None for totally random
 
-    #'extra_point_clouds_list': ['data/0_extra.ply', 'data/1_extra.ply'],
     'extra_point_clouds_list': None,
 
     'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
@@ -92,15 +91,23 @@ if cat_name == 'chair':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
     para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-19-18/ckpts/model_410.ckpt'
     #para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_emd_2019-03-02-19-21-15/ckpts/model_1320.ckpt'
+
 elif cat_name == 'table':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-41-36/ckpts/model_300.ckpt'
+    #para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-41-36/ckpts/model_300.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage-redo_hausdorff_2019-03-07-20-52-12/ckpts/model_290.ckpt'
+
 elif cat_name == 'motorbike':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
     para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/pcl2pcl/log_motorbike_pcl2pcl_gan_percentage_hausdorff_2019-03-04-20-54-10/ckpts/model_870.ckpt'
+
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
     para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_percentage_hausdorff_2019-03-05-10-55-54/ckpts/model_980.ckpt'
+
+elif cat_name == 'car':
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/pcl2pcl/log_car_pcl2pcl_gan_percentage_hausdorff_2019-03-07-12-06-59/ckpts/model_710.ckpt'
 
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config_gan['extra_point_clouds_list'], random_seed=para_config_gan['random_seed'], preprocess=False)
 
@@ -108,7 +115,7 @@ NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_g
 model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
 LOG_DIR = os.path.join('run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
-if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
+if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 

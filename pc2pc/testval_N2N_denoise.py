@@ -23,7 +23,7 @@ import pc_util
 import shapenet_pc_dataset
 import autoencoder
 
-cat_name = 'plane'
+cat_name = 'car'
 
 para_config = {
     'exp_name': 'ae_%s_0-partial'%(cat_name),
@@ -70,15 +70,22 @@ para_config = {
 if cat_name == 'chair':
     para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
     para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_percent_np2np_2019-03-01-21-13-28/ckpts/model_1800.ckpt'
+
 elif cat_name == 'table':
     para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
     para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_percent_np2np_2019-03-01-21-20-13/ckpts/model_1540.ckpt'
+
 elif cat_name == 'motorbike':
     para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
     para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_percentage_np2np_2019-03-04-17-00-31/ckpts/model_870.ckpt'
+
 elif cat_name == 'plane':
     para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
     para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_np2np_2019-03-04-16-22-53/ckpts/model_1810.ckpt'
+
+elif cat_name == 'car':
+    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
+    para_config['ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/log_ae_car_percentage_np2np_2019-03-06-15-50-22/ckpts/model_1920.ckpt'
 
 #################### back up code for this run ##########################
 model_name = para_config['ckpt'].split('/')[-1].split('.')[0]

@@ -24,17 +24,15 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
 cat_name = 'table'
-pts_remove_percentage = 0.5
-partial_portion = 1.0
+loss = 'hausdorff'
 
-# paras for autoencoder
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_%d-percentage_redo'%(cat_name, pts_remove_percentage*100),
-    'random_seed': 0, # None for totally random
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN'%(cat_name),
+    'random_seed': 0,
 
-    'extra_point_clouds_list': None,
+    'recover_ckpt': None,
 
-    'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
+    'batch_size': 1,
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,
@@ -43,25 +41,13 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
-    'loss': 'emd',
-    #'loss': 'hausdorff',
+    'loss': loss,
     'lambda': 1.0, # parameter on back-reconstruction loss
-    'eval_loss': 'emd',
-    #'eval_loss': 'hausdorff',
-    #'eval_loss': 'chamfer',
-
-    # noise parameters
-    'noise_mu': 0.0, 
-    'noise_sigma': 0.01, 
-    #'r_min': 0.1, 
-    #'r_max': 0.25, 
-    'p_min': pts_remove_percentage,
-    'p_max': pts_remove_percentage,
-    'partial_portion': partial_portion, # 0.25 by default in training
+    'eval_loss': loss,
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
-
+    
     # G paras
     'g_fc_sizes': [128],
     'g_activation_fn': tf.nn.relu,
@@ -72,7 +58,7 @@ para_config_gan = {
     'd_activation_fn': tf.nn.leaky_relu,
     'd_bn': False,
 }
-
+# paras for autoencoder
 para_config_ae = {
     # encoder
     'latent_code_dim': 128,
@@ -91,33 +77,39 @@ para_config_ae = {
 
 if cat_name == 'chair':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
-    #para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-19-18/ckpts/model_410.ckpt'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_percentage_emd_2019-03-02-19-21-15/ckpts/model_1320.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/03001627/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/03001627/point_cloud'
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-20-33-29/ckpts/model_230.ckpt'
 
 elif cat_name == 'table':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
-    #para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage_hausdorff_2019-03-02-19-41-36/ckpts/model_300.ckpt'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage-redo_hausdorff_2019-03-07-20-52-12/ckpts/model_290.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/04379243/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/04379243/point_cloud'
 
-elif cat_name == 'motorbike':
-    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/pcl2pcl/log_motorbike_pcl2pcl_gan_percentage_hausdorff_2019-03-04-20-54-10/ckpts/model_870.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/pcl2pcl/log_table_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-20-42-50/ckpts/model_420.ckpt'
 
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_percentage_hausdorff_2019-03-05-10-55-54/ckpts/model_980.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-14-14-18/ckpts/model_590.ckpt'
 
 elif cat_name == 'car':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/pcl2pcl/log_car_pcl2pcl_gan_percentage_hausdorff_2019-03-07-12-06-59/ckpts/model_710.ckpt'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
 
-NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test', extra_ply_point_clouds_list=para_config_gan['extra_point_clouds_list'], random_seed=para_config_gan['random_seed'], preprocess=False)
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-19-59-14/ckpts/model_710.ckpt'
+
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
 model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
-LOG_DIR = os.path.join('run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
-if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
+if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -169,12 +161,14 @@ def test():
             saver.restore(sess, para_config_gan['pcl2pcl_gan_ckpt'])
 
             all_inputs = []
+            all_name = []
             all_recons = []
             all_gt = []
             all_eval_losses = []
             while NOISY_TEST_DATASET.has_next_batch():
 
-                noise_cur, clean_cur = NOISY_TEST_DATASET.next_batch_noise_partial_by_percentage(noise_mu=para_config_gan['noise_mu'], noise_sigma=para_config_gan['noise_sigma'], p_min=para_config_gan['p_min'], p_max=para_config_gan['p_max'], partial_portion=para_config_gan['partial_portion'], with_gt=True)
+                noise_cur, name_cur = NOISY_TEST_DATASET.next_batch_with_name()
+                clean_cur = noise_cur
 
                 feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
@@ -184,36 +178,24 @@ def test():
                 fake_clean_reconstr_val, eval_losses_val = sess.run([fake_clean_reconstr, eval_loss], feed_dict=feed_dict)
 
                 all_inputs.extend(noise_cur)
+                all_name.extend(name_cur)
                 all_recons.extend(fake_clean_reconstr_val)
                 all_gt.extend(clean_cur)
                 all_eval_losses.append(eval_losses_val)
 
             NOISY_TEST_DATASET.reset()
 
-            pc_util.write_ply_batch(np.asarray(all_inputs), os.path.join(LOG_DIR, 'pcloud', 'input'))
-            pc_util.write_ply_batch(np.asarray(all_gt), os.path.join(LOG_DIR, 'pcloud', 'gt'))
-            pc_util.write_ply_batch(np.asarray(all_recons), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_inputs), all_name, os.path.join(LOG_DIR, 'pcloud', 'input'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_gt), all_name, os.path.join(LOG_DIR, 'pcloud', 'gt'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_recons), all_name, os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
             print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
+            print(LOG_DIR)
             return eval_loss_mean
            
 if __name__ == "__main__":
     log_string('pid: %s'%(str(os.getpid())))
-    '''
-    #model_index = [100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000]
-    model_index = [100,200,300,400,500,600,700,800,900]
-    ckpt_str_template = '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_PN_lamda=1_2019-02-12-19-34-37/ckpts/model_%s.ckpt'
-    eval_losses = {}
-    for midx in model_index:
-        para_config_gan['pcl2pcl_gan_ckpt'] = ckpt_str_template%(str(midx))
-        print('Evaluating for %s'%(para_config_gan['pcl2pcl_gan_ckpt']))
 
-        eval_loss = test()
-        eval_losses[midx] = eval_loss
-    
-    for k in sorted(eval_losses.keys()):
-        print(k, eval_losses[k])
-    '''
     test()
 
     LOG_FOUT.close()

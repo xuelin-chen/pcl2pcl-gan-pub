@@ -3,7 +3,7 @@
 import os,sys
 import numpy as np
 import trimesh
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 from pyrender import PerspectiveCamera,\
                      DirectionalLight, SpotLight, PointLight,\
@@ -66,7 +66,7 @@ def read_ply_xyz(filename):
 
 def get_all_filnames(dir, nb=30):
     all_filenames = [ os.path.join(dir, f) for f in os.listdir(dir)]
-    all_filenames.sort()
+    #all_filenames.sort()
     return all_filenames[:nb]
 
 def add_point_cloud_mesh_to_scene(point_cloud, scene, pose, pts_colors):
@@ -129,7 +129,7 @@ def render_big_gallery_overlay(dir_1, dir_2, pts_color_1=[0.5,0.5,0.5], pts_colo
 
     return big_gallery
 
-def render_big_gallery(results_dir, nb=30, pts_colors=[0.5,0.5,0.5]):
+def render_big_gallery(results_dir, nb=30, pts_colors=[0.5,0.5,0.5], draw_text=False):
     '''
     pts_colors: [0,0,0]
     return np array of a big image
@@ -164,6 +164,13 @@ def render_big_gallery(results_dir, nb=30, pts_colors=[0.5,0.5,0.5]):
         
         scene.remove_node(input_pc_node)
 
+        if draw_text:
+            im_here = Image.fromarray(renderred_color)
+            d = ImageDraw.Draw(im_here)
+            fnt = ImageFont.truetype(font='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', size=100)
+            d.text((0,0), input_pf.split('/')[-1], fill=(0,0,0,255), font=fnt)
+            renderred_color = np.array(im_here)
+
         images.append(renderred_color)
 
     big_gallery = np.concatenate(images, axis=0)
@@ -174,24 +181,25 @@ def render_big_gallery(results_dir, nb=30, pts_colors=[0.5,0.5,0.5]):
 
 if __name__=='__main__':
     nb_chairs_to_show = 50
-    cat_name = 'plane'
-    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/run_%s/N2N_ae_test/log_test_ae_plane_50-percentage_np2c_model_1810_2019-03-06-12-07-02'%(cat_name)
-    #test_results_log_dir_2 = '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_pcl2pcl_gan_np2c_dualAE_rotation_test_2019-02-20-11-37-03'
+    cat_name = 'table'
+    exp_name = 'pcl2pcl_test'
+    #exp_name = 'N2N_ae_test'
+    log_dir = 'log_test_table_pcl2pcl_gan_50-percentage_redo_model_290_2019-03-08-12-46-19'
+    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/run_%s/%s/%s'%(cat_name, exp_name, log_dir)
 
-    gt_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','gt'), nb_chairs_to_show, [.5,0.5,.5])
+    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl_test/log_test_car_pcl2pcl_gan_3D-EPN_model_710_2019-03-08-16-24-48'
+    out_filename = 'pcl2pcl_3D-EPN_car_m710.png'
+
+    gt_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','gt'), nb_chairs_to_show, [.5,0.5,.5], draw_text=True)
     input_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','input'), nb_chairs_to_show, [.5,0.5,.5])
     recon_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), nb_chairs_to_show, [0,0,1])
     overlaid_1 = render_big_gallery_overlay(os.path.join(test_results_log_dir_1, 'pcloud','input'), os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), [.5,.5,.5], [0,0,1], nb_chairs_to_show)
 
     big_1_im = np.concatenate([gt_color_arr_1, input_color_arr_1, recon_color_arr_1, overlaid_1], axis=1)
     big_1_img = Image.fromarray(big_1_im)
-    big_1_img.save('exp_completion_test_N2N_%s_50P.png'%(cat_name))
+    #big_1_img.save('exp_completion_%s_%s_50P.png'%(exp_name, cat_name))
+    #big_1_img.save('exp_denoise_%s_%s.png'%(exp_name, cat_name))
+    big_1_img.save(out_filename)
+    print(out_filename)
 
-    #input_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud','input'))
-    #recon_color_arr_2 = render_big_gallery(os.path.join(test_results_log_dir_2, 'pcloud', 'reconstruction'))
-
-    #bi_im = np.concatenate([input_color_arr_1, recon_color_arr_1, input_color_arr_2, recon_color_arr_2], axis=1)
-
-    #big_img = Image.fromarray(bi_im)
-    #big_img.save('n2n_vs_ours_rotation_test.png')   
     

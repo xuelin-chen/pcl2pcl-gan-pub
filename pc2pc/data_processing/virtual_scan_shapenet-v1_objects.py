@@ -12,9 +12,9 @@ import pc_util
 
 ############################ useful vars ############################
 SHAPENET_V2_PATH = '/workspace/dataset/ShapeNetCore.v1'
-cat_synset_id = '03001627' # chair synset number for a specific category in shapnetv2
+#cat_synset_id = '03001627' # chair synset number for a specific category in shapnetv2
 #cat_synset_id = '02691156' # airplane
-#cat_synset_id = '04379243' # table
+cat_synset_id = '04379243' # table
 #cat_synset_id = '03790512' # motorcycle
 #cat_synset_id = '02958343' # car
 

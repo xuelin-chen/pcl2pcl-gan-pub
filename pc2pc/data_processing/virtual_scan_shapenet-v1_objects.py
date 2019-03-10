@@ -24,8 +24,8 @@ PREV_OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v1_point_cloud', cat_syns
 EXE_VIRTUAL_SCANNER = '/workspace/pcl/build/bin/pcl_virtual_scanner'
 VERT_DEGREE_RES = 0.125
 HOR_DEGREE_RES = 0.125
-VERT_NB_SCANS = 900
-HOR_BN_SCANS = 900
+VERT_NB_SCANS = 600
+HOR_BN_SCANS = 600
 '''
 point_mu = 0
 point_sigma = 0.0012 # deviation in m
@@ -49,7 +49,7 @@ def generate_camera_view_target_points():
     gen some samples on a circle on 3 planes
     '''
     r = 2. # 2 meters away from the center
-    angle_step = 12 # in degree
+    angle_step = 20 # in degree
     
     cam_view_points = []
     cam_target_points = []

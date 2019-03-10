@@ -19,8 +19,7 @@ cat_synset_id = '03001627' # chair synset number for a specific category in shap
 #cat_synset_id = '02958343' # car
 
 OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v1_point_cloud', cat_synset_id, 'point_cloud_clean_full')
-#PREV_OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v1_point_cloud', cat_synset_id, 'point_cloud_clean')
-PREV_OUTPUT_DATA_PATH = None
+PREV_OUTPUT_DATA_PATH = os.path.join('../data/ShapeNet_v1_point_cloud', cat_synset_id, 'point_cloud_clean_full')
 
 EXE_VIRTUAL_SCANNER = '/workspace/pcl/build/bin/pcl_virtual_scanner'
 VERT_DEGREE_RES = 0.125
@@ -103,7 +102,7 @@ def virtual_scane_one_model(model_dir, worker_id):
         return
     model_basename = os.path.basename(model_dir)
     prev_clean_output_filename = os.path.join(PREV_OUTPUT_DATA_PATH, model_basename+'_clean.ply')
-    if PREV_OUTPUT_DATA_PATH is not None and os.path.exists(prev_clean_output_filename):
+    if os.path.exists(prev_clean_output_filename):
         print('Previously scanned, skip.', prev_clean_output_filename)
         return
 

@@ -57,6 +57,11 @@ snc_synth_category_to_id = {
     'washer'   : '04554684' ,  'boat'      : '02858304' ,  'cellphone'     : '02992529' 
 }
 
+def get_cls_id(cls_name):
+    if cls_name == 'plane':
+        return snc_synth_category_to_id['airplane']
+    return snc_synth_category_to_id[cls_name]
+
 class DemoPointCloudDataset:
     def __init__(self, part_point_cloud_dir, batch_size=1, npoint=2048, random_seed=None):
         self.batch_size = batch_size

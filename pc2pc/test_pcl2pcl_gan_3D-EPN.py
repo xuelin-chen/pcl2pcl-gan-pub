@@ -27,7 +27,7 @@ cat_name = 'table'
 loss = 'hausdorff'
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_3D-EPN'%(cat_name),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN_gt-retrieved'%(cat_name),
     'random_seed': 0,
 
     'recover_ckpt': None,
@@ -94,7 +94,7 @@ elif cat_name == 'plane':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
 
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-14-14-18/ckpts/model_590.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-14-14-18/ckpts/model_720.ckpt'
 
 elif cat_name == 'car':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
@@ -104,6 +104,8 @@ elif cat_name == 'car':
     para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-19-59-14/ckpts/model_710.ckpt'
 
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
+
+SCAN_PC_DIR = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud'
 
 #################### dirs, code backup and etc for this run ##########################
 model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
@@ -133,6 +135,25 @@ def print_trainable_vars():
     trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
     for tv in trainable_vars:
         print(tv.name)
+
+def get_gt_point_clouds(cls_name, model_names, sample_nb=2048):
+    cls_id = shapenet_pc_dataset.get_cls_id(cls_name)
+    pc_dir = os.path.join(SCAN_PC_DIR, cls_id, 'point_cloud_clean')
+    pc_arr = []
+    for mn in model_names:
+        mn = mn.split('_')[0]
+        gt_pc_filename = os.path.join(pc_dir, mn+'_clean.ply')
+
+        if not os.path.exists(gt_pc_filename):
+            print('GT points not found: %s'%(gt_pc_filename))
+            pc_arr.append(np.zeros((sample_nb, 3)))
+            continue
+
+        gt_pc = pc_util.read_ply_xyz(gt_pc_filename)
+        gt_pc = pc_util.sample_point_cloud(gt_pc, sample_nb)
+        pc_arr.append(gt_pc)
+    pc_arr = np.array(pc_arr)
+    return pc_arr
 
 def test():
     with tf.Graph().as_default():
@@ -185,6 +206,7 @@ def test():
 
             NOISY_TEST_DATASET.reset()
 
+            all_gt = get_gt_point_clouds(cat_name, all_name)
             pc_util.write_ply_batch_with_name(np.asarray(all_inputs), all_name, os.path.join(LOG_DIR, 'pcloud', 'input'))
             pc_util.write_ply_batch_with_name(np.asarray(all_gt), all_name, os.path.join(LOG_DIR, 'pcloud', 'gt'))
             pc_util.write_ply_batch_with_name(np.asarray(all_recons), all_name, os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))

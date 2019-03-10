@@ -14,6 +14,7 @@ def read_obj(filename):
 
 def convert_obj2ply(obj_filename, ply_filename, recenter=False, center_mode='pt_center'):
     mesh = pymesh.load_mesh(obj_filename)
+    pymesh.remove_isolated_vertices(mesh)
 
     if recenter:
         if center_mode == 'pt_center':

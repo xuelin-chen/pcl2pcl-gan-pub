@@ -532,6 +532,17 @@ def rotate_point_cloud_by_axis_angle(points, axis, angle_deg):
 
     return new_points
 
+def sample_point_cloud(points, sample_nb):
+    '''
+    points: Nx3
+    '''
+    if points.shape[0] < sample_nb:
+        replace = True
+    else:
+        replace = False
+    choice = np.random.choice(len(points), sample_nb, replace=replace)
+    return points[choice]
+
 # ----------------------------------------
 # Simple Point cloud and Volume Renderers
 # ----------------------------------------

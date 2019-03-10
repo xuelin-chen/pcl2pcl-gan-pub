@@ -21,15 +21,25 @@ def convert_pc2df(points, resolution=32):
     the range is defined by the bbox of points
     points: Nx3, np array
     '''
-
-    tree = spatial.KDTree(points)
-
+    # scale points to fit within a cube of resolution (32) size length
+    # move points to center at (resolution/2, resolution/2, resolution/2)
     pts_min = np.amin(points, axis=0)
     pts_max = np.amax(points, axis=0)
-
     extents = pts_max - pts_min
+    max_size = np.max(extents)
+    scale_factor = resolution / max_size
 
-    x_grid_size, y_grid_size, z_grid_size = extents[0]/float(resolution), extents[1]/float(resolution), extents[2]/float(resolution)
+    bbox_center = (pts_max + pts_min) / 2.0
+    trans_v = np.array([resolution/2.0, resolution/2.0, resolution/2.0]) - bbox_center
+    
+    for pidx, p in enumerate(points):
+        points[pidx] = p * scale_factor
+        points[pidx] = points[pidx] + trans_v    
+    ####
+
+    x_grid_size, y_grid_size, z_grid_size = 1, 1, 1
+
+    tree = spatial.KDTree(points)
 
     df_mat = np.zeros((resolution, resolution, resolution))
     df_arr = []
@@ -37,7 +47,7 @@ def convert_pc2df(points, resolution=32):
         for y_i in range(resolution):
             for x_i in range(resolution):
 
-                center_cur = get_cell_center(pts_min, x_i, y_i, z_i, x_grid_size, y_grid_size, z_grid_size)
+                center_cur = get_cell_center(np.array([0,0,0]), x_i, y_i, z_i, x_grid_size, y_grid_size, z_grid_size)
 
                 nearest_dist, _ = tree.query(center_cur)
 

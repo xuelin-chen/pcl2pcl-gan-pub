@@ -9,6 +9,7 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, '../utils'))
 import pc_util
 
+num_workers = 14
 thre = 0.03
 cat_name = 'car'
 #test_name = 'vanilla_ae_test'
@@ -18,11 +19,11 @@ test_name = 'pcl2pcl_test'
 #keyword2filter = '-perc'
 #keyword2filter = 'redo'
 #keyword2filter = '_gt-retrieved'
-keyword2filter = '_results_log_dimscale-align_iso-0.5'
+keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/EPN_results/converted_txt_dim128/output-test-images-dim128'
+test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/pcl2pcl_test/all_models'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -63,10 +64,11 @@ def eval_result_folder(result_dir):
     avg_dist = np.mean(all_avg_dist)
     avg_comp = np.mean(all_comp)
 
-    print('%s - distance, completeness: %s,%s'%(result_dir, str(avg_dist), str(avg_comp)))
+    print('%s - distance, completeness: %s,%s'%(result_dir.split('/')[-1], str(avg_dist), str(avg_comp)))
 
 result_folders = os.listdir(test_dir)
-result_folders.sort()
+print('#folders: ', len(result_folders))
+#result_folders.sort()
 
 if keyword2filter is not None:
     result_folders_tmp = []
@@ -75,16 +77,29 @@ if keyword2filter is not None:
             result_folders_tmp.append(rs)
     result_folders = result_folders_tmp
 
-num_workers = len(result_folders)
+if len(result_folders) <= num_workers:
+    num_workers = len(result_folders)
+    work_round_nb = 1
+else:
+    work_round_nb = int(np.ceil(len(result_folders) / num_workers))
 
-pros = []
-for worker_id in range(num_workers):
-    res_folder = os.path.join(test_dir, result_folders[worker_id])
-    pros.append(multiprocessing.Process(target=eval_result_folder, args=(res_folder,)))
-    pros[worker_id].start()
-    print('start to work on:', res_folder)
+count = 0
+for wround_idx in range(work_round_nb):
+    pros = []
+    for worker_id in range(num_workers):
 
-for worker_id in range(num_workers):
-    pros[worker_id].join()
+        result_f_idx = worker_id + wround_idx * num_workers
+        if result_f_idx >= len(result_folders):
+            continue
 
+        res_folder = os.path.join(test_dir, result_folders[result_f_idx])
+        pros.append(multiprocessing.Process(target=eval_result_folder, args=(res_folder,)))
+        pros[worker_id].start()
+        print('start to work on:', res_folder.split('/')[-1])
+        count += 1
+    
+    for worker_id in range(num_workers):
+        pros[worker_id].join()
+    
+print('#worked folders:', count)
 print('Done!')

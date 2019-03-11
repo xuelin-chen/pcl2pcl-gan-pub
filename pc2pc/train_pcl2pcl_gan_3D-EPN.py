@@ -23,14 +23,14 @@ import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 
-cat_name = 'car'
+cat_name = 'plane'
 loss = 'hausdorff'
 
 para_config_gan = {
     'exp_name': '%s_pcl2pcl_gan_3D-EPN-continure'%(cat_name),
     'random_seed': None,
 
-    'recover_ckpt': '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-19-59-14/ckpts/model_1400.ckpt',
+    'recover_ckpt': '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-14-14-18/ckpts/model_1470.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,

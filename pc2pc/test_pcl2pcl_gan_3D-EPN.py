@@ -57,6 +57,8 @@ para_config_gan = {
     'd_fc_sizes': [256, 512],
     'd_activation_fn': tf.nn.leaky_relu,
     'd_bn': False,
+
+    'LOG_DIR': '',
 }
 # paras for autoencoder
 para_config_ae = {
@@ -107,29 +109,21 @@ NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_confi
 
 SCAN_PC_DIR = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud'
 
-#################### dirs, code backup and etc for this run ##########################
-model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-print(LOG_DIR)
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+def prepare4test():
+    #################### dirs, code backup and etc for this run ##########################
+    model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
+    #para_config_gan['LOG_DIR'] = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    para_config_gan['LOG_DIR'] = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_test', 'all_models', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    print(para_config_gan['LOG_DIR'])
+    if not os.path.exists(para_config_gan['LOG_DIR']): os.makedirs(para_config_gan['LOG_DIR'])
 
-script_name = os.path.basename(__file__)
-bk_filenames = ['latent_gan.py', 
-                 script_name,  
-                 'latent_generator_discriminator.py']
-for bf in bk_filenames:
-    os.system('cp %s %s' % (bf, LOG_DIR))
-LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
-LOG_FOUT.write(str(para_config_gan)+'\n')
-LOG_FOUT.write(str(para_config_ae)+'\n')
-
-HOSTNAME = socket.gethostname()
+    script_name = os.path.basename(__file__)
+    bk_filenames = ['latent_gan.py', 
+                    script_name,  
+                    'latent_generator_discriminator.py']
+    for bf in bk_filenames:
+        os.system('cp %s %s' % (bf, para_config_gan['LOG_DIR']))
 ##########################################################################
-
-def log_string(out_str):
-    LOG_FOUT.write(out_str+'\n')
-    LOG_FOUT.flush()
-    print(out_str)
 
 def print_trainable_vars():
     trainable_vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
@@ -156,17 +150,13 @@ def get_gt_point_clouds(cls_name, model_names, sample_nb=2048):
     return pc_arr
 
 def test():
+    prepare4test()
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(0)):
             latent_gan = PCL2PCLGAN(para_config_gan, para_config_ae)
-            print_trainable_vars()
             _, _, _, _, _, _, fake_clean_reconstr, eval_loss = latent_gan.model()
             
             saver = tf.train.Saver(max_to_keep=None)
-
-        # print
-        log_string('Net layers:')
-        log_string(str(latent_gan))
 
         # Create a session
         config = tf.ConfigProto()
@@ -207,17 +197,20 @@ def test():
             NOISY_TEST_DATASET.reset()
 
             all_gt = get_gt_point_clouds(cat_name, all_name)
-            pc_util.write_ply_batch_with_name(np.asarray(all_inputs), all_name, os.path.join(LOG_DIR, 'pcloud', 'input'))
-            pc_util.write_ply_batch_with_name(np.asarray(all_gt), all_name, os.path.join(LOG_DIR, 'pcloud', 'gt'))
-            pc_util.write_ply_batch_with_name(np.asarray(all_recons), all_name, os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_inputs), all_name, os.path.join(para_config_gan['LOG_DIR'], 'pcloud', 'input'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_gt), all_name, os.path.join(para_config_gan['LOG_DIR'], 'pcloud', 'gt'))
+            pc_util.write_ply_batch_with_name(np.asarray(all_recons), all_name, os.path.join(para_config_gan['LOG_DIR'], 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
             print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
-            print(LOG_DIR)
             return eval_loss_mean
            
 if __name__ == "__main__":
-    log_string('pid: %s'%(str(os.getpid())))
 
-    test()
+    model_dir = os.path.dirname(para_config_gan['pcl2pcl_gan_ckpt'])
 
-    LOG_FOUT.close()
+    for model_idx in range(100, 1600, 10):
+        model_ckpt_filename = os.path.join(model_dir, 'model_%d.ckpt'%(model_idx))
+        para_config_gan['pcl2pcl_gan_ckpt'] = model_ckpt_filename
+
+        test()
+

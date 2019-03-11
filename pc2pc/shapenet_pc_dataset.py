@@ -395,6 +395,252 @@ class ShapeNetPartPointsDataset:
     def get_npoint(self):
         return self.npoint
 
+class ShapeNetPartPointsDataset_V1:
+    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=True):
+        '''
+        part_point_cloud_dir: the directory contains the oringal ply point clouds
+        batch_size:
+        npoint: a fix number of points that will sample from the point clouds
+        shuffle: whether to shuffle the order of point clouds
+        normalize: whether to normalize the point clouds
+        split: 
+        extra_ply_point_clouds_list: a list contains some extra point cloud file names, 
+                                     note that only use it in test time, 
+                                     these point clouds will be inserted in front of the point cloud list,
+                                     which means extra clouds get to be tested first
+        random_seed: not used for now, debug needed
+        '''
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.point_cloud_dir = part_point_cloud_dir
+        self.npoint = npoint
+        #self.normalize = normalize
+        self.split = split
+        self.random_seed = random_seed
+        self.preprocess = preprocess
+
+        # make a random generator
+        self.rand_gen = RandomState(self.random_seed)
+        #self.rand_gen = np.random
+
+        # list of numpy arrays
+        self.point_clouds = self._read_all_pointclouds(self.point_cloud_dir)
+        if self.preprocess:
+            self._preprocess_point_clouds(self.point_clouds)
+
+        if extra_ply_point_clouds_list is not None:
+            print('Reading extra point clouds...')
+            extra_point_clouds = pc_util.read_ply_from_file_list(extra_ply_point_clouds_list)
+            for e_pc in reversed(extra_point_clouds):
+                self.point_clouds.insert(0, e_pc)
+
+        self.reset()
+
+    def _shuffle_list(self, l):
+        self.rand_gen.shuffle(l)
+    
+    def _read_all_pointclouds(self, dir):
+        '''
+        return a list of point clouds
+        '''
+        # prepare file names
+        split_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s_split.pickle'%(self.split))
+        with open(split_filename, 'rb') as pf:
+            pc_name_list = pickle.load(pf)
+        pc_filenames = []
+        for pc_n in pc_name_list:
+            pc_filenames.append(os.path.join(dir, pc_n))
+        pc_filenames.sort() # NOTE: sort the file names here!
+
+        pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s.pickle'%(self.split))
+        if os.path.exists(pickle_filename):
+            print('Loading cached pickle file: %s'%(pickle_filename))
+            p_f = open(pickle_filename, 'rb')
+            point_clouds = pickle.load(p_f)
+            p_f.close()
+        else:
+            print('Reading and caching pickle file.')
+            point_clouds = pc_util.read_ply_from_file_list(pc_filenames) # a list of arrays
+
+            # NOTE!!!: rotate the point clouds here, to align with our data
+            print('Pre-rotate point clouds to align with ShapeNet-V2 data...')
+            for pc_id, pc in enumerate(point_clouds):
+                rotated_points = pc_util.rotate_point_cloud_by_axis_angle(pc, [0,1,0], 90)
+                point_clouds[pc_id] = rotated_points
+
+            p_f = open(pickle_filename, 'wb')
+            pickle.dump(point_clouds, p_f)
+            print('Cache to %s'%(pickle_filename))
+            p_f.close()
+
+        print('Loaded #point clouds: ', len(point_clouds))
+
+        return point_clouds
+
+    def _preprocess_point_clouds(self, point_clouds):
+        '''
+        1. normalize to fit within a unit cube
+        2. snap to the ground
+        '''
+        print('Pre-processing point clouds...')
+        for i, pc in enumerate(point_clouds):
+            pts_min = np.amin(pc, axis=0)
+            pts_max = np.amax(pc, axis=0)
+
+            bbox_size = pts_max - pts_min
+
+            scale_factor = 1.0 / np.amax(bbox_size)
+
+            bbox_center = (pts_max + pts_min) / 2.0
+            bbox_bot_center = bbox_center - np.array([0,bbox_size[1]/2.0,0])
+
+            pc = pc - bbox_bot_center
+            pc = pc * scale_factor
+
+            point_clouds[i] = pc
+
+        print('Pre-processing done.')
+
+    def reset(self):
+        self.batch_idx = 0
+        if self.shuffle:
+            self._shuffle_list(self.point_clouds)
+
+    def has_next_batch(self):
+        num_batch = np.floor(len(self.point_clouds) / self.batch_size) + 1
+        if self.batch_idx < num_batch:
+            return True
+        return False
+    
+    def next_batch(self):
+        start_idx = self.batch_idx * self.batch_size
+        end_idx = (self.batch_idx+1) * self.batch_size
+
+        data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        for i in range(start_idx, end_idx):
+
+            if i >= len(self.point_clouds):
+                i_tmp = i % len(self.point_clouds)
+                pc_cur = self.point_clouds[i_tmp]
+            else:
+                pc_cur = self.point_clouds[i] # M x 3
+
+            choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
+            idx_cur = i % self.batch_size
+            data_batch[idx_cur] = pc_cur[choice_cur, :]
+
+        self.batch_idx += 1
+        return data_batch
+
+    def next_batch_noise_partial_by_percentage(self, noise_mu=0.0, noise_sigma=0.01, p_min=0.05, p_max=0.5, partial_portion=0.25, with_gt=False):
+        '''
+        p_min and p_max: the min and max percentage of removed points
+        partial_portion: the portion of partial data being generated
+        '''
+        data_batch = self.next_batch()
+
+        # randomly carve out some points
+        data_res = []
+        for _, data in enumerate(data_batch):
+            do_partial_odd = self.rand_gen.rand()
+            if do_partial_odd < partial_portion:
+                center_idx = self.rand_gen.randint(self.get_npoint(), size=1)
+                center = data[center_idx]
+
+                distances = np.linalg.norm(data - center, axis=1)
+
+                p_cur = self.rand_gen.uniform(p_min, p_max)
+
+                nb_pts2remove = int(self.npoint * p_cur)
+                sorted_indices = np.argsort(distances) # ascending order
+
+                remain_points = data[sorted_indices[nb_pts2remove:]]
+                
+                choice = self.rand_gen.choice(len(remain_points), self.npoint, replace=True)
+                remain_points = remain_points[choice, :]
+
+                data_res.append(remain_points)
+            else:
+                data_res.append(data)
+            
+        data_res = np.asarray(data_res)
+
+        # noise
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_res.shape)
+        noisy_batch = data_res + noise_here
+
+        if with_gt:
+            return noisy_batch, data_batch
+        return noisy_batch   
+
+    def next_batch_noise_added_with_partial(self, noise_mu=0.0, noise_sigma=0.01, r_min=0.1, r_max=0.25, partial_portion=0.25, with_gt=False):
+        '''
+        r_max: the max radius for carving out the point around a chosen center
+        partial_portion: the portion of partial data being generated
+        '''
+        data_batch = self.next_batch()
+
+        # randomly carve out some points
+        data_res = []
+        for _, data in enumerate(data_batch):
+            do_partial_odd = self.rand_gen.rand()
+            if do_partial_odd < partial_portion:
+                center_idx = self.rand_gen.randint(self.get_npoint(), size=1)
+                center = data[center_idx]
+
+                distances = np.linalg.norm(data - center, axis=1)
+
+                clip_r = self.rand_gen.uniform(r_min, r_max)
+
+                remain_points = data[distances > clip_r]
+
+                if len(remain_points) < 0.2 * self.npoint:
+                    remain_points = data
+                    print('WARNING: too partial data. Using complete data instead.')
+                
+                choice = self.rand_gen.choice(len(remain_points), self.npoint, replace=True)
+                remain_points = remain_points[choice, :]
+
+                data_res.append(remain_points)
+            else:
+                data_res.append(data)
+            
+        data_res = np.asarray(data_res)
+
+        # noise
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_res.shape)
+        noisy_batch = data_res + noise_here
+
+        if with_gt:
+            return noisy_batch, data_batch
+        return noisy_batch
+
+    def next_batch_noise_added(self, noise_mu=0.0, noise_sigma=0.01):
+
+        data_batch = self.next_batch()
+
+        # noise
+        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_batch.shape)
+        data_batch = data_batch + noise_here
+
+        return data_batch
+
+    def aug_data_batch(self, data_batch, scale_low=0.8, scale_high=1.25, rot=True, snap2ground=True, trans=0.1):
+        res_batch = data_batch
+        if True:
+            res_batch = provider.random_scale_point_cloud(data_batch, scale_low=scale_low, scale_high=scale_high)
+        if rot:
+            res_batch = provider.rotate_point_cloud(res_batch)
+        if trans is not None:
+            res_batch = provider.shift_point_cloud(res_batch, shift_range=trans)
+        if snap2ground:
+            res_batch = provider.lift_point_cloud_to_ground(res_batch)
+        return res_batch
+
+    def get_npoint(self):
+        return self.npoint
+
+
 class ShapeNet_3DEPN_PointsDataset:
     def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=True):
         '''

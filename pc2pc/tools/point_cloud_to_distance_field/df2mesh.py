@@ -21,9 +21,9 @@ dim = 128
 points_sample_nb = 2048
 distance_field_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/EPN_results/converted_txt_dim%d'%(dim)
 if dim == 128:
-    iso_val = 0.5
+    iso_val = 1.0
 
-SHAPENET_POINTCLOUD_DIR = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud'
+SHAPENET_POINTCLOUD_DIR = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud'
 
 def find_files(dir, extension='.txt', recursive=True):
     filenames = glob.glob(os.path.join(dir, '**', '*'+extension), recursive=True)

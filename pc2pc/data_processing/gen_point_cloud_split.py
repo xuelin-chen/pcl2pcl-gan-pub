@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 import pickle
 
-point_cloud_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
+point_cloud_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean'
 
 all_ply_filenames = [f for f in os.listdir(point_cloud_dir)]
 print('Toal: %d'%(len(all_ply_filenames)))

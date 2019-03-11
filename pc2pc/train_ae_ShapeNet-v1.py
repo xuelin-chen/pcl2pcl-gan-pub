@@ -21,6 +21,7 @@ import tf_util
 import pc_util
 import shapenet_pc_dataset
 import autoencoder
+import config
 
 cat_name = 'car'
 
@@ -29,7 +30,6 @@ para_config = {
     'random_seed': None,
     'ae_type': 'c2c', # 'c2c', 'n2n', 'np2np'
 
-    #'preprocess_data': False, # flag for preprocess of the data, which includes snap and normalization. True for real data exp, False for synthetic data exp
     'batch_size': 200,
     'lr': 0.0005, # base starting learning rate
     #'decay_step': 7000000, # in samples, for chair data: 5000000 (~800 epoches), for table data: 7000000 (~800 epoches) 
@@ -40,13 +40,6 @@ para_config = {
     'save_interval': 10, # unit in epoch
     
     'loss': 'emd',
-    
-    #'data_aug': {'scale_low': 0.9,
-    #             'scale_high': 1.1,
-    #             'rot': False,
-    #             'snap2ground': False,
-    #             'trans': 0.1,
-    #            },
     
     'data_aug': None,
 
@@ -96,16 +89,16 @@ elif cat_name == 'motorbike':
     para_config['output_interval'] = 1
     para_config['batch_size'] = 30 # only have 300+ motorbikes, use small batch size.
 elif cat_name == 'car':
-    para_config['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean'
+    para_config['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02958343/point_cloud_clean')
     para_config['decay_step'] = 6000000
     para_config['output_interval'] = 10
 
 # TODO: need to have a shapenet v1 data provider, in which the point clouds need to be rotated to be aligned with v2 data
-TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
-TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test', preprocess=False)
+TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
+TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test', preprocess=False)
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_synthetic', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 

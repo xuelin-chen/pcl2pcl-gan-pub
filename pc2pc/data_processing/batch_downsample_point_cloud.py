@@ -8,11 +8,11 @@ sys.path.append(os.path.join(ROOT_DIR, '../utils'))
 
 import pc_util
 
-point_cloud_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean_full'
-output_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean'
+point_cloud_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02691156/point_cloud_clean_full'
+output_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02691156/point_cloud_clean'
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
-down_sample_rate = 0.25
+down_sample_rate = 0.125
 
 ply_filename_list = [os.path.join(point_cloud_dir, f) for f in os.listdir(point_cloud_dir)]
 ply_filename_list.sort()

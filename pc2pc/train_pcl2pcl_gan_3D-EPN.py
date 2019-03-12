@@ -36,7 +36,7 @@ para_config_gan = {
     'recover_ckpt': None,
 
     'batch_size': 84, # 24 by default
-    'lr': 0.000001, # 0.0001 by default
+    'lr': 0.0000001, # 0.0001 by default
     'beta1': 0.5,
     'epoch': 3001,
     'k': 1, # train k times for D each loop when training

@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'chair'
+cat_name = 'table'
 loss = 'emd' # using emd loss against gt
 
 para_config_gan = {

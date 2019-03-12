@@ -24,8 +24,8 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'table'
-note = 'retrain'
+cat_name = 'car'
+note = 'retrain-SN1'
 
 loss = 'hausdorff'
 
@@ -166,7 +166,7 @@ def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(0)):
             latent_gan = PCL2PCLGAN(para_config_gan, para_config_ae)
-            print_trainable_vars()
+            #print_trainable_vars()
             G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model()
             G_optimizer, D_optimizer = latent_gan.optimize(G_loss, D_loss)
 
@@ -222,17 +222,21 @@ def train():
                 # NOTE: load pre-trained AE weights
                 # noisy AE, only pre-trained encoder is used
                 noisy_ckpt_vars = tf.contrib.framework.list_variables(para_config_gan['noisy_ae_ckpt'])
+                '''
                 print('Noisy AE pre-trained variables:')
                 for vname, _ in noisy_ckpt_vars:
                     print(vname)
+                '''
                 restore_dict = get_restore_dict(noisy_ckpt_vars, latent_gan.noisy_encoder.all_variables)
                 noisy_saver = tf.train.Saver(restore_dict)
                 noisy_saver.restore(sess, para_config_gan['noisy_ae_ckpt'])
                 # clean AE, both pre-trained encoder and decoder are used
                 clean_ckpt_vars = tf.contrib.framework.list_variables(para_config_gan['clean_ae_ckpt'])
+                '''
                 print('Clean AE pre-trained variables:')
                 for vname, _ in clean_ckpt_vars:
                     print(vname)
+                '''
                 restore_dict = get_restore_dict(clean_ckpt_vars, latent_gan.clean_encoder.all_variables)
                 clean_saver = tf.train.Saver(restore_dict)
                 clean_saver.restore(sess, para_config_gan['clean_ae_ckpt'])
@@ -279,10 +283,11 @@ def train():
                               feed_dict=feed_dict)
                     
                     # save currently generated
-                    pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
-                    pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
+                    if i % para_config_gan['save_interval'] == 0:
+                        pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
+                        pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
+                        pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
                     
-
                     # terminal prints
                     log_string('%s training %d snapshot: '%(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), i))
                     log_string('        G loss: {:.6f} = (g){:.6f}, (r){:.6f}'.format(G_loss_mean_val, G_tofool_loss_mean_val, reconstr_loss_mean_val))

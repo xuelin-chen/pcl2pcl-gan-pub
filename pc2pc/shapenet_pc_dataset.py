@@ -458,7 +458,7 @@ class ShapeNetPartPointsDataset_V1:
         self.pc_filenames.sort() # NOTE: sort the file names here!
         #print(self.pc_filenames)
 
-        pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s.pickle'%(self.split))
+        pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s_rotated.pickle'%(self.split))
         if os.path.exists(pickle_filename):
             print('Loading cached pickle file: %s'%(pickle_filename))
             p_f = open(pickle_filename, 'rb')

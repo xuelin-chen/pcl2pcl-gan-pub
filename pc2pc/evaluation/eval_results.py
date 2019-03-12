@@ -9,7 +9,7 @@ ROOT_DIR = os.path.dirname(BASE_DIR)
 sys.path.append(os.path.join(ROOT_DIR, '../utils'))
 import pc_util
 
-num_workers = 14
+num_workers = 12
 thre = 0.03
 cat_name = 'car'
 #test_name = 'vanilla_ae_test'
@@ -23,7 +23,7 @@ keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace//pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl_test/all_models_ShapeNetV1-GT'
+test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/pcl2pcl_wGT_test/all_models_ShapeNetV1-GT'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -65,7 +65,7 @@ def eval_result_folder(result_dir):
     print('%s - distance, completeness: %s,%s'%(result_dir.split('/')[-1], str(avg_dist), str(avg_comp)))
 
 result_folders = os.listdir(test_dir)
-#result_folders.sort()
+result_folders.sort()
 
 if keyword2filter is not None:
     result_folders_tmp = []

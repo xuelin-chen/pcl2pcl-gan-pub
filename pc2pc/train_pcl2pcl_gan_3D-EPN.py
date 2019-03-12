@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'car'
+cat_name = 'table'
 note = 'retrain'
 
 loss = 'hausdorff'
@@ -35,8 +35,8 @@ para_config_gan = {
 
     'recover_ckpt': None,
 
-    'batch_size': 84, # 24 by default
-    'lr': 0.0000001, # 0.0001 by default
+    'batch_size': 24, # 24 by default
+    'lr': 0.0001, # 0.0001 by default
     'beta1': 0.5,
     'epoch': 3001,
     'k': 1, # train k times for D each loop when training

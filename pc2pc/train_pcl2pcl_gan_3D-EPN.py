@@ -35,7 +35,7 @@ para_config_gan = {
 
     'recover_ckpt': None,
 
-    'batch_size': 96,
+    'batch_size': 84,
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,

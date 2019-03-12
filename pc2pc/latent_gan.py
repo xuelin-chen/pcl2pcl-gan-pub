@@ -97,7 +97,6 @@ class PCL2PCLGAN:
         self.fake_code = tf.placeholder(tf.float32, shape=[para_config['batch_size'], para_config['latent_dim']])
         self.real_code = tf.placeholder(tf.float32, shape=[para_config['batch_size'], para_config['latent_dim']])
 
-        # used when evaluation only
         self.gt = tf.placeholder(tf.float32, shape=[para_config['batch_size'], para_config['point_cloud_shape'][0], para_config['point_cloud_shape'][1]])
 
     def model(self):
@@ -108,7 +107,28 @@ class PCL2PCLGAN:
 
         fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
 
-        reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud)
+        reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud) # comput loss against the input
+        G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
+
+        self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
+
+        D_fake_loss, D_real_loss, D_loss = self._discriminator_loss(self.D, self.fake_code, self.real_code)
+
+        # eval only loss
+        eval_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt, eval_loss=self.para_config['eval_loss'])
+
+        return G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss
+    
+    def model_wGT(self):
+
+        self.noisy_code = self.noisy_encoder(self.input_noisy_cloud, tf.constant(False, shape=()))
+
+        self.fake_code = self.G(self.noisy_code, self.is_training)
+
+        fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
+
+        reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt) # compute loss against gt
         G_tofool_loss = self._generator_loss(self.D, self.fake_code)
         G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
 
@@ -199,6 +219,9 @@ class PCL2PCLGAN:
     def __str__(self):
         res = str(self.G) + '\n' + str(self.D)
         return res
+
+
+#############################################################################
 
 class PCL2PCLGAN_SingleAE:
     '''
@@ -346,8 +369,6 @@ class PCL2PCLGAN_SingleAE:
         res = str(self.G) + '\n' + str(self.D)
         return res
 
-
-#############################################################################
 import pickle
 class LatentCodeDataset:
     def __init__(self, latent_pickle_filename, batch_size, shuffle=True):

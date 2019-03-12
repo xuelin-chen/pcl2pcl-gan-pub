@@ -23,7 +23,7 @@ keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/pcl2pcl_test/all_models'
+test_dir = '/workspace//pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl_test/all_models_ShapeNetV1-GT'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -56,10 +56,8 @@ def eval_result_folder(result_dir):
         avg_d = evaluation_utils.avg_dist(re_pc_pts, gt_pc_pts)
         comp = evaluation_utils.completeness(re_pc_pts, gt_pc_pts, thre=thre)
 
-
         all_avg_dist.append(avg_d)
         all_comp.append(comp)
-
 
     avg_dist = np.mean(all_avg_dist)
     avg_comp = np.mean(all_comp)
@@ -67,7 +65,6 @@ def eval_result_folder(result_dir):
     print('%s - distance, completeness: %s,%s'%(result_dir.split('/')[-1], str(avg_dist), str(avg_comp)))
 
 result_folders = os.listdir(test_dir)
-print('#folders: ', len(result_folders))
 #result_folders.sort()
 
 if keyword2filter is not None:
@@ -76,6 +73,8 @@ if keyword2filter is not None:
         if keyword2filter in rs:
             result_folders_tmp.append(rs)
     result_folders = result_folders_tmp
+
+print('#folders: ', len(result_folders))
 
 if len(result_folders) <= num_workers:
     num_workers = len(result_folders)
@@ -98,7 +97,7 @@ for wround_idx in range(work_round_nb):
         print('start to work on:', res_folder.split('/')[-1])
         count += 1
     
-    for worker_id in range(num_workers):
+    for worker_id in range(len(pros)):
         pros[worker_id].join()
     
 print('#worked folders:', count)

@@ -11,7 +11,6 @@ EPN_results_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/EPN_results'
 real_chair_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud'
 real_chair_ori_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_Y_extracted'
 
-
 #################### models for synthetic data ################################
 
 ################ AE ckpt - ShapeNet v2
@@ -33,21 +32,18 @@ pcl2pcl_chair_ShapeNetV2_ckpt = '/workspace/pointnet2/pc2pc/run_synthetic/run_ch
 pcl2pcl_table_ShapeNetV2_ckpt = '/workspace/pointnet2/pc2pc/run_synthetic/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage-redo_hausdorff_2019-03-07-20-52-12/ckpts/model_290.ckpt'
 pcl2pcl_plane_ShapeNetV2_ckpt = '/workspace/pointnet2/pc2pc/run_synthetic/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_percentage_hausdorff_2019-03-05-10-55-54/ckpts/model_980.ckpt'
 
-'''
+
 ################ AE ckpt - ShapeNet v1
-AE_car_c2c_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_car/ae/?/ckpts/model_?.ckpt'
-AE_car_np2np_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_car/ae/?/ckpts/model_?.ckpt'
+AE_car_c2c_ShapeNetV1_ckpt = '/workspace/pointnet2/pc2pc/run_synthetic/run_car/ae/log_ae_car_ShapeNet-V1_c2c_2019-03-11-15-37-32/ckpts/model_2000.ckpt'
 
-AE_chair_c2c_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_chair/ae/?/ckpts/model_?.ckpt'
-AE_chair_np2np_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_chair/ae/?/ckpts/model_?.ckpt'
+######################## AE ckpt - 3D-EPN
+AE_car_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/ae/log_3DEPN_ae_car_2019-03-06-22-51-09/ckpts/model_325.ckpt'
 
-AE_table_c2c_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_table/ae/?/ckpts/model_?.ckpt'
-AE_table_np2np_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_table/ae/?/ckpts/model_?.ckpt'
+AE_chair_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/ae/log_3DEPN_ae_chair_2019-03-06-16-08-06/ckpts/model_420.ckpt'
 
-AE_plane_c2c_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_plane/ae/?/ckpts/model_?.ckpt'
-AE_plane_np2np_ShapeNetV1 = '/workspace/pointnet2/pc2pc/run_synthetic/run_plane/ae/?/ckpts/model_?.ckpt'
-'''
+AE_table_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/ae/log_3DEPN_ae_table_2019-03-06-16-10-10/ckpts/model_485.ckpt'
 
+AE_plane_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/ae/log_3DEPN_ae_plane_2019-03-06-17-21-52/ckpts/model_450.ckpt'
 
 if __name__ == '__main__':
         

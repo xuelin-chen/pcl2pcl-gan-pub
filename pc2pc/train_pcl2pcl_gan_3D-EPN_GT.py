@@ -24,13 +24,11 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'table'
-note = 'retrain'
-
-loss = 'hausdorff'
+cat_name = 'chair'
+loss = 'emd' # using emd loss against gt
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_3D-EPN_%s'%(cat_name, note),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN_GT'%(cat_name),
     'random_seed': None,
 
     'recover_ckpt': None,
@@ -113,21 +111,21 @@ elif cat_name == 'car':
     para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02958343/point_cloud')
     
     para_config_gan['noisy_ae_ckpt'] = config.AE_car_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_car_c2c_ShapeNetV1_ckpt
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/?/ckpts/model_?.ckpt'
     # NOTE: for car, must use shapenet v1 data and ae trained from shapenet v1
 
+NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 if 'v1' in para_config_gan['point_cloud_dir']:
     print('Using ShapeNet-V1 data')
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 else:
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
-NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_wGT', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -162,12 +160,20 @@ def get_restore_dict(stored_vars, current_vars):
 
     return res
 
+def EPN_pcnames_to_SNnames(name_batch):
+    names = []
+    for n in name_batch:
+        model_name = n.split('_')[0]
+        pc_filename_inSN = os.path.join(para_config_gan['point_cloud_dir'], model_name+'_clean.ply')
+        names.append(pc_filename_inSN)
+    return names
+
 def train():
     with tf.Graph().as_default():
         with tf.device('/gpu:'+str(0)):
             latent_gan = PCL2PCLGAN(para_config_gan, para_config_ae)
             print_trainable_vars()
-            G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model()
+            G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model_wGT()
             G_optimizer, D_optimizer = latent_gan.optimize(G_loss, D_loss)
 
             # metrics for tensorboard visualization
@@ -246,11 +252,14 @@ def train():
                 sess.run(reset_metrics)
 
                 while NOISY_TRAIN_DATASET.has_next_batch() and CLEAN_TRAIN_DATASET.has_next_batch():
-                    noise_cur = NOISY_TRAIN_DATASET.next_batch()
+                    noise_cur, name_cur = NOISY_TRAIN_DATASET.next_batch_with_name()
+                    name_inSN = EPN_pcnames_to_SNnames(name_cur)
+                    gt_cur = CLEAN_TRAIN_DATASET.get_point_clouds_by_names(name_inSN)
                     clean_cur = CLEAN_TRAIN_DATASET.next_batch()
 
                     feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
+                            latent_gan.gt:                gt_cur,
                             latent_gan.input_clean_cloud: clean_cur,
                             latent_gan.is_training: True,
                             }
@@ -281,6 +290,9 @@ def train():
                     # save currently generated
                     pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
                     pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
+
+                    # for debug
+                    pc_util.write_ply_batch(gt_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_gt_%d'%(i)))
                     
 
                     # terminal prints
@@ -295,11 +307,12 @@ def train():
                     # test and evaluate on test set
                     NOISY_TEST_DATASET.reset()
                     while NOISY_TEST_DATASET.has_next_batch():
-                        noise_cur = NOISY_TEST_DATASET.next_batch()
-                        clean_cur = noise_cur
+                        noise_cur, name_cur = NOISY_TEST_DATASET.next_batch_with_name()
+                        name_inSN = EPN_pcnames_to_SNnames(name_cur)
+                        gt_cur = CLEAN_TRAIN_DATASET.get_point_clouds_by_names(name_inSN)
                         feed_dict={
                                     latent_gan.input_noisy_cloud: noise_cur,
-                                    latent_gan.gt: clean_cur,
+                                    latent_gan.gt: gt_cur,
                                     latent_gan.is_training: False,
                                     }
                         fake_clean_reconstr_val, _ = sess.run([fake_clean_reconstr, eval_loss_mean_update_op], feed_dict=feed_dict)

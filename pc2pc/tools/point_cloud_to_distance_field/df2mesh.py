@@ -111,6 +111,9 @@ for df_txt_fn in tqdm(df_txt_filenames):
         print('No scanning available: %s'%(scanned_pc_filename))
         continue
     scan_pc = pc_util.read_ply_xyz(scanned_pc_filename)
+    if 'v1' in SHAPENET_POINTCLOUD_DIR:
+        # for v1 data, rotate it to align with v2
+        scan_pc = pc_util.rotate_point_cloud_by_axis_angle(scan_pc, [0,1,0], 90)
     scan_pc =pc_util.sample_point_cloud(scan_pc, points_sample_nb)
     pc_util.write_ply(scan_pc, os.path.join(out_gt_dir, mdl_id+'.ply'))
 

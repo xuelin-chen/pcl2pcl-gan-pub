@@ -436,8 +436,13 @@ class ShapeNetPartPointsDataset_V1:
 
         self.reset()
 
-    def _shuffle_list(self, l):
-        self.rand_gen.shuffle(l)
+    def _shuffle_data(self):
+
+        idx = [i for i in range(len(self.point_clouds))]
+        self.rand_gen.shuffle(idx)
+
+        self.point_clouds = [self.point_clouds[i] for i in idx]
+        self.pc_filenames = [self.pc_filenames[i] for i in idx]
     
     def _read_all_pointclouds(self, dir):
         '''
@@ -447,10 +452,11 @@ class ShapeNetPartPointsDataset_V1:
         split_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s_split.pickle'%(self.split))
         with open(split_filename, 'rb') as pf:
             pc_name_list = pickle.load(pf)
-        pc_filenames = []
+        self.pc_filenames = []
         for pc_n in pc_name_list:
-            pc_filenames.append(os.path.join(dir, pc_n))
-        pc_filenames.sort() # NOTE: sort the file names here!
+            self.pc_filenames.append(os.path.join(dir, pc_n))
+        self.pc_filenames.sort() # NOTE: sort the file names here!
+        #print(self.pc_filenames)
 
         pickle_filename = os.path.join(os.path.dirname(dir), os.path.basename(dir)+'_%s.pickle'%(self.split))
         if os.path.exists(pickle_filename):
@@ -460,7 +466,7 @@ class ShapeNetPartPointsDataset_V1:
             p_f.close()
         else:
             print('Reading and caching pickle file.')
-            point_clouds = pc_util.read_ply_from_file_list(pc_filenames) # a list of arrays
+            point_clouds = pc_util.read_ply_from_file_list(self.pc_filenames) # a list of arrays
 
             # NOTE!!!: rotate the point clouds here, to align with our data
             print('Pre-rotate point clouds to align with ShapeNet-V2 data...')
@@ -504,7 +510,20 @@ class ShapeNetPartPointsDataset_V1:
     def reset(self):
         self.batch_idx = 0
         if self.shuffle:
-            self._shuffle_list(self.point_clouds)
+            self._shuffle_data()
+
+    def get_point_clouds_by_names(self, query_pc_filenames):
+
+        point_clouds = []
+        for pc_fn in query_pc_filenames:
+            pc_idx = self.pc_filenames.index(pc_fn)
+            pc_cur = self.point_clouds[pc_idx]
+            choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
+            pc_cur = pc_cur[choice_cur, :]
+            point_clouds.append(pc_cur)
+        point_clouds = np.array(point_clouds)
+
+        return point_clouds
 
     def has_next_batch(self):
         num_batch = np.floor(len(self.point_clouds) / self.batch_size) + 1
@@ -615,16 +634,6 @@ class ShapeNetPartPointsDataset_V1:
             return noisy_batch, data_batch
         return noisy_batch
 
-    def next_batch_noise_added(self, noise_mu=0.0, noise_sigma=0.01):
-
-        data_batch = self.next_batch()
-
-        # noise
-        noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_batch.shape)
-        data_batch = data_batch + noise_here
-
-        return data_batch
-
     def aug_data_batch(self, data_batch, scale_low=0.8, scale_high=1.25, rot=True, snap2ground=True, trans=0.1):
         res_batch = data_batch
         if True:
@@ -640,9 +649,8 @@ class ShapeNetPartPointsDataset_V1:
     def get_npoint(self):
         return self.npoint
 
-
 class ShapeNet_3DEPN_PointsDataset:
-    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=True):
+    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=False):
         '''
         part_point_cloud_dir: the directory contains the oringal ply point clouds
         batch_size:
@@ -676,8 +684,13 @@ class ShapeNet_3DEPN_PointsDataset:
 
         self.reset()
 
-    def _shuffle_list(self, l):
-        self.rand_gen.shuffle(l)
+    def _shuffle_data(self):
+
+        idx = [i for i in range(len(self.point_clouds))]
+        self.rand_gen.shuffle(idx)
+
+        self.point_clouds = [self.point_clouds[i] for i in idx]
+        self.pc_filenames = [self.pc_filenames[i] for i in idx]
     
     def _read_all_pointclouds(self, dir):
         '''
@@ -743,7 +756,7 @@ class ShapeNet_3DEPN_PointsDataset:
     def reset(self):
         self.batch_idx = 0
         if self.shuffle:
-            self._shuffle_list(self.point_clouds)
+            self._shuffle_data()
 
     def has_next_batch(self):
         num_batch = np.floor(len(self.point_clouds) / self.batch_size) + 1
@@ -799,7 +812,6 @@ class ShapeNet_3DEPN_PointsDataset:
 
     def get_npoint(self):
         return self.npoint
-
 
 import trimesh
 class RealWorldPointsDataset:
@@ -983,6 +995,13 @@ class RealWorldPointsDataset:
 
 
 if __name__=='__main__':
+    para_config_gan = {}
+    para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean'
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
+
+    NOISY_TRAIN_DATASET = ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=12, npoint=2048, shuffle=True, split='trainval', preprocess=False)
+
     '''
     REALDATASET = RealWorldPointsDataset('/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud', batch_size=6, npoint=2048,  shuffle=False, split='trainval', random_seed=0)
 

@@ -140,6 +140,27 @@ class PCL2PCLGAN:
         eval_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt, eval_loss=self.para_config['eval_loss'])
 
         return G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss
+
+    def model_noReconLoss(self):
+
+        self.noisy_code = self.noisy_encoder(self.input_noisy_cloud, tf.constant(False, shape=()))
+
+        self.fake_code = self.G(self.noisy_code, self.is_training)
+
+        fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
+
+        G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        reconstr_loss = G_tofool_loss
+        G_loss = G_tofool_loss
+
+        self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
+
+        D_fake_loss, D_real_loss, D_loss = self._discriminator_loss(self.D, self.fake_code, self.real_code)
+
+        # eval only loss
+        eval_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt, eval_loss=self.para_config['eval_loss'])
+
+        return G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss
     
     def _reconstruction_loss(self, recon, input, eval_loss=None):
         if eval_loss == None:

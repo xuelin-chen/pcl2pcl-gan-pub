@@ -23,7 +23,7 @@ keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/test_3D-EPN/test_plane/pcl2pcl_wGT_test/all_models_ShapeNetV1-GT'
+test_dir = '/workspace/pointnet2/pc2pc/test_3D-EPN/test_plane/pcl2pcl_wGT_test/all_models_ShapeNetV1-GT'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)

@@ -121,7 +121,7 @@ NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_conf
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_noReconLoss', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_noReconLoss', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 

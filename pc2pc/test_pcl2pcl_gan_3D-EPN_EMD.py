@@ -25,10 +25,10 @@ import shapenet_pc_dataset
 import config
 
 cat_name = 'plane'
-loss = 'hausdorff'
+loss = 'emd'
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_3D-EPN'%(cat_name),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN_EMD'%(cat_name),
     'random_seed': 0,
 
     'recover_ckpt': None,
@@ -82,7 +82,7 @@ if cat_name == 'chair':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/03001627/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/03001627/point_cloud'
 
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/pcl2pcl/log_chair_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-20-33-29/ckpts/model_230.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/pcl2pcl_EMD/log_chair_pcl2pcl_gan_3D-EPN_emd-loss_emd_2019-03-13-16-30-02/ckpts/model_230.ckpt'
 
 elif cat_name == 'table':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/04379243/point_cloud'
@@ -94,7 +94,7 @@ elif cat_name == 'plane':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
 
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl/log_plane_pcl2pcl_gan_3D-EPN_retrain_hausdorff_2019-03-12-21-54-10/ckpts/model_720.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl_EMD/log_plane_pcl2pcl_gan_3D-EPN_emd-loss_emd_2019-03-13-16-36-12/ckpts/model_720.ckpt'
 
 elif cat_name == 'car':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
@@ -109,7 +109,7 @@ SCAN_PC_DIR = config.ShapeNet_v1_point_cloud_dir
 def prepare4test():
     #################### dirs, code backup and etc for this run ##########################
     model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
-    para_config_gan['LOG_DIR'] = os.path.join('test_3D-EPN', 'test_%s'%(cat_name), 'pcl2pcl_test_2ND-TRAIN', 'all_models_ShapeNetV1-GT', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    para_config_gan['LOG_DIR'] = os.path.join('test_3D-EPN', 'test_%s'%(cat_name), 'pcl2pcl_EMD_test', 'all_models_ShapeNetV1-GT', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     print(para_config_gan['LOG_DIR'])
     if not os.path.exists(para_config_gan['LOG_DIR']): os.makedirs(para_config_gan['LOG_DIR'])
 
@@ -200,7 +200,7 @@ def test():
             pc_util.write_ply_batch_with_name(np.asarray(all_gt), all_name, os.path.join(para_config_gan['LOG_DIR'], 'pcloud', 'gt'))
             pc_util.write_ply_batch_with_name(np.asarray(all_recons), all_name, os.path.join(para_config_gan['LOG_DIR'], 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
-            print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
+            print('(Useless) Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
             return eval_loss_mean
            
 if __name__ == "__main__":

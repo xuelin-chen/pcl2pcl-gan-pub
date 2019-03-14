@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'car'
+cat_name = 'table'
 note = 'noGAN'
 
 loss = 'hausdorff'

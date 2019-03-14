@@ -193,9 +193,10 @@ class PCL2PCLGAN:
         fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
 
         reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud) # comput loss against the input
-        G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        #G_tofool_loss = self._generator_loss(self.D, self.fake_code)
         #G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
         G_loss = self.para_config['lambda'] * reconstr_loss # no GAN loss
+        G_tofool_loss = G_loss
 
         self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
 

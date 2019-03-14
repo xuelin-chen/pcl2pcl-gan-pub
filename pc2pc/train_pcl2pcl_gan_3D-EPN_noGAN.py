@@ -168,7 +168,8 @@ def train():
             latent_gan = PCL2PCLGAN(para_config_gan, para_config_ae)
             #print_trainable_vars()
             G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model_noGAN()
-            G_optimizer, D_optimizer = latent_gan.optimize(G_loss, D_loss)
+            G_optimizer = latent_gan.optimize4G(G_loss)
+            D_optimizer = G_optimizer
 
             # metrics for tensorboard visualization
             with tf.name_scope('metrics'):

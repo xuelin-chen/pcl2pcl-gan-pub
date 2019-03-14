@@ -282,6 +282,40 @@ class PCL2PCLGAN:
 
         return G_optimizer, D_optimizer
     
+    def optimize4G(self, g_loss):
+        def make_optimizer(loss, variables, name='Adam'):
+            """ Adam optimizer with learning rate 0.0001 for the first 100k steps (~100 epochs)
+                and a linearly decaying rate that goes to zero over the next 100k steps
+            """
+            global_step = tf.Variable(0, trainable=False)
+            starter_learning_rate = self.para_config['lr']
+            end_learning_rate = 0.0
+            start_decay_step = 1000000
+            decay_steps = 1000000
+            beta1 = self.para_config['beta1']
+            learning_rate = (
+                tf.where(
+                        tf.greater_equal(global_step, start_decay_step),
+                        tf.train.polynomial_decay(starter_learning_rate, global_step-start_decay_step,
+                                                    decay_steps, end_learning_rate,
+                                                    power=1.0),
+                        starter_learning_rate
+                )
+
+            )
+            tf.summary.scalar('learning_rate/{}'.format(name), learning_rate, collections=['train'])
+
+            optimizer_here = tf.train.AdamOptimizer(learning_rate, beta1=beta1, name=name)
+
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                learning_step = optimizer_here.minimize(loss, global_step=global_step, var_list=variables)
+                return learning_step
+
+        G_optimizer = make_optimizer(g_loss, self.G.variables, name='Adam_G')
+
+        return G_optimizer
+
     def __str__(self):
         res = str(self.G) + '\n' + str(self.D)
         return res

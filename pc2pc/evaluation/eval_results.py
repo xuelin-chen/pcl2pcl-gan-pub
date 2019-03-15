@@ -23,7 +23,7 @@ keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/test_3D-EPN/test_plane/pcl2pcl_wGT_test/all_models_ShapeNetV1-GT'
+test_dir = '/workspace/pointnet2/pc2pc/test_3D-EPN/test_plane/clean_ae_test'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -42,24 +42,26 @@ def get_3D_EPN_GT_dir(result_dir):
         return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_plane_gt'
 
 def eval_result_folder(result_dir):
-    gt_point_cloud_dir = get_3D_EPN_GT_dir(result_dir)
+    #gt_point_cloud_dir = get_3D_EPN_GT_dir(result_dir)
+    gt_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'gt')
     result_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'reconstruction')
 
-    gt_pc_names = os.listdir(gt_point_cloud_dir)
-    gt_pc_names.sort()
+    re_pc_names = os.listdir(result_point_cloud_dir)
+    re_pc_names.sort()
 
     all_avg_dist = []
     all_comp_percentage = []
     all_comp_avg_dist = []
-    for gt_pc_n  in (gt_pc_names):
+    for re_pc_n  in (re_pc_names):
 
-        gt_pc_filename = os.path.join(gt_point_cloud_dir, gt_pc_n)
-        re_pc_filename = os.path.join(result_point_cloud_dir, gt_pc_n)
+        gt_pc_filename = os.path.join(gt_point_cloud_dir, re_pc_n)
+        re_pc_filename = os.path.join(result_point_cloud_dir, re_pc_n)
 
         gt_pc_pts = pc_util.read_ply_xyz(gt_pc_filename)
         if not gt_isvalid(gt_pc_pts):
             print('Invalid gt point cloud, skip.')
             continue
+        
         re_pc_pts = pc_util.read_ply_xyz(re_pc_filename)
         if re_pc_pts.shape[0] < 2048:
             re_pc_pts = pc_util.sample_point_cloud(re_pc_pts, 2048)
@@ -75,7 +77,7 @@ def eval_result_folder(result_dir):
     avg_comp_perct = np.mean(all_comp_percentage)
     avg_comp_avg_dist = np.mean(all_comp_avg_dist)
 
-    print('%s - avg_acc_distance, completeness-percentage, completeness-avg_distance: %s,%s, %s'%(result_dir.split('/')[-1], str(avg_acc_dist), str(avg_comp_perct), str(avg_comp_avg_dist)))
+    print('%s - avg_acc_distance, completeness-avg_distance, completeness-percentage: %s,%s, %s'%(result_dir.split('/')[-1], str(avg_acc_dist), str(avg_comp_avg_dist), str(avg_comp_perct)))
 
 result_folders = os.listdir(test_dir)
 result_folders.sort()

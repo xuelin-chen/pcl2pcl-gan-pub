@@ -23,12 +23,8 @@ def avg_dist(P_recon, P_gt):
 
     dists = np.linalg.norm(P_recon_here - P_gt_here, axis=-1) # N x N x 1
     dists = np.squeeze(dists) # N x N
-    #print(dists)
-    #print(dists.shape)
 
-    min_dists = np.amin(dists, axis=1)
-    #print(min_dists)
-    #print(min_dists.shape)
+    min_dists = np.amin(dists, axis=1) # N x 1
 
     avg_dist = np.mean(min_dists)
 
@@ -76,11 +72,13 @@ def completeness(P_recon, P_gt, thre=0.01):
     dists = np.linalg.norm(P_gt_here - P_recon_here, axis=-1) # N x N x 1
     dists = np.squeeze(dists) # N x N
 
-    min_dists = np.amin(dists, axis=1) # 1 x N
+    min_dists = np.amin(dists, axis=1) # N x 1
+    
+    avg_min_dist = np.mean(min_dists)
 
     matched = min_dists[min_dists < thre]
     fraction = matched.shape[0] / npoint
-    return fraction
+    return fraction, avg_min_dist
 
 if __name__=='__main__':
 

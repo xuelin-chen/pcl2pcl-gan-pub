@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'car'
+cat_name = 'table'
 loss = 'emd'
 
 para_config_gan = {
@@ -88,7 +88,7 @@ elif cat_name == 'table':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/04379243/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/04379243/point_cloud'
 
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/pcl2pcl/log_table_pcl2pcl_gan_3D-EPN_hausdorff_2019-03-07-20-42-50/ckpts/model_420.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/pcl2pcl_EMD/log_table_pcl2pcl_gan_3D-EPN_emd-loss_emd_2019-03-13-16-33-44/ckpts/model_420.ckpt'
 
 elif cat_name == 'plane':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'

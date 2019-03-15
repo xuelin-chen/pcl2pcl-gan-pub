@@ -11,10 +11,10 @@ import pc_util
 
 num_workers = 70
 thre = 0.03
-cat_name = 'car'
+#cat_name = 'car'
 #test_name = 'vanilla_ae_test'
 #test_name = 'N2N_ae_test'
-test_name = 'pcl2pcl_test'
+#test_name = 'pcl2pcl_test'
 #keyword2filter = '0-partial'
 #keyword2filter = '-perc'
 #keyword2filter = 'redo'
@@ -31,15 +31,26 @@ def gt_isvalid(gt_points):
         return False
     return True
 
+def get_3D_EPN_GT_dir(result_dir):
+    if 'car' in result_dir:
+        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_car_gt'
+    elif 'chair' in result_dir:
+        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_chair_gt'
+    elif 'table' in result_dir:
+        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_table_gt'
+    elif 'plane' in result_dir:
+        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_plane_gt'
+
 def eval_result_folder(result_dir):
-    gt_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'gt')
+    gt_point_cloud_dir = get_3D_EPN_GT_dir(result_dir)
     result_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'reconstruction')
 
     gt_pc_names = os.listdir(gt_point_cloud_dir)
     gt_pc_names.sort()
 
     all_avg_dist = []
-    all_comp = []
+    all_comp_percentage = []
+    all_comp_avg_dist = []
     for gt_pc_n  in (gt_pc_names):
 
         gt_pc_filename = os.path.join(gt_point_cloud_dir, gt_pc_n)
@@ -54,15 +65,17 @@ def eval_result_folder(result_dir):
             re_pc_pts = pc_util.sample_point_cloud(re_pc_pts, 2048)
 
         avg_d = evaluation_utils.avg_dist(re_pc_pts, gt_pc_pts)
-        comp = evaluation_utils.completeness(re_pc_pts, gt_pc_pts, thre=thre)
+        comp_perct, comp_avg_dist = evaluation_utils.completeness(re_pc_pts, gt_pc_pts, thre=thre)
 
         all_avg_dist.append(avg_d)
-        all_comp.append(comp)
+        all_comp_percentage.append(comp_perct)
+        all_comp_avg_dist.append(comp_avg_dist)
 
-    avg_dist = np.mean(all_avg_dist)
-    avg_comp = np.mean(all_comp)
+    avg_acc_dist = np.mean(all_avg_dist)
+    avg_comp_perct = np.mean(all_comp_percentage)
+    avg_comp_avg_dist = np.mean(all_comp_avg_dist)
 
-    print('%s - distance, completeness: %s,%s'%(result_dir.split('/')[-1], str(avg_dist), str(avg_comp)))
+    print('%s - avg_acc_distance, completeness-percentage, completeness-avg_distance: %s,%s, %s'%(result_dir.split('/')[-1], str(avg_acc_dist), str(avg_comp_perct), str(avg_comp_avg_dist)))
 
 result_folders = os.listdir(test_dir)
 result_folders.sort()

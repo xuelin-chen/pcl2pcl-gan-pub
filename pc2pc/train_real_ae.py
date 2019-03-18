@@ -21,15 +21,16 @@ import tf_util
 import pc_util
 import shapenet_pc_dataset
 import autoencoder
+import config
+
+cat_name = 'scannet_chair'
 
 # paras for autoencoder on all chairs
 para_config = {
-    'exp_name': 'real_ae_chair',
+    'exp_name': '%s_real_ae'%(cat_name),
     'random_seed': None,
 
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
-
-    'batch_size': 48,
+    'batch_size': 24,
     'lr': 0.0005, # base starting learning rate
     'decay_step': 5000000, # in samples, ~800 epoches
     'decay_rate': 0.5,
@@ -55,12 +56,17 @@ para_config = {
     'activation_fn': tf.nn.relu,
 }
 
+if cat_name == 'scannet_chair':
+    para_config['point_cloud_dir'] = config.real_scannet_chair_aligned_data_dir
+elif cat_name == 'scannet_table':
+    para_config['point_cloud_dir'] = config.real_scannet_table_aligned_data_dir
+
 TRAIN_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval')
 TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test')
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_ae_renorm', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+LOG_DIR = os.path.join('run_real', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['autoencoder.py', 
@@ -91,7 +97,7 @@ def train():
             ae = autoencoder.AutoEncoder(paras=para_config)
             print_trainable_vars()
 
-            reconstr_loss, reconstr, latent_code = ae.model()
+            reconstr_loss, reconstr, _ = ae.model()
             optimizer = ae.make_optimizer(reconstr_loss)
 
             # metrics for tensorboard visualization
@@ -108,10 +114,6 @@ def train():
             train_writer = tf.summary.FileWriter(os.path.join(LOG_DIR, 'summary', 'train'))
             test_writer = tf.summary.FileWriter(os.path.join(LOG_DIR, 'summary', 'test'))
             saver = tf.train.Saver(max_to_keep=None)
-
-        # print
-        log_string('Net layers:')
-        log_string(str(ae))
 
         # Create a session
         config = tf.ConfigProto()

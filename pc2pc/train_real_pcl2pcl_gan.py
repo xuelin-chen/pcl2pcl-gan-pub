@@ -22,17 +22,13 @@ import tf_util
 import pc_util
 from latent_gan import PCL2PCLGAN, LatentCodeDataset
 import shapenet_pc_dataset
+import config
 
+cat_name = 'scannet_chair'
 
 para_config_gan = {
-    'exp_name': 'real_pcl2pcl_gan_renormed_data_aug',
+    'exp_name': '%s_real_pcl2pcl_gan'%(cat_name),
     'random_seed': None,
-
-    'real_point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
-
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_data_aug_c2c_2019-02-26-17-49-01/ckpts/model_1280.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_c2c_2019-02-26-17-37-38/ckpts/model_1670.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,
@@ -43,19 +39,9 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
-    #'loss': 'emd',
     'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
-    #'eval_loss': 'emd',
     'eval_loss': 'hausdorff',
-
-    'clean_data_aug': {'scale_low': 0.9,
-                        'scale_high': 1.1,
-                        'rot': False,
-                        'snap2ground': False,
-                        'trans': 0.1,
-                        },
-    #'clean_data_aug': None,
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -87,13 +73,30 @@ para_config_ae = {
     'activation_fn': tf.nn.relu,
 }
 
+if cat_name == 'scannet_chair':
+    para_config_gan['real_point_cloud_dir'] = config.real_scannet_chair_aligned_data_dir
+    para_config_gan['point_cloud_dir'] =  os.path.join(config.ShapeNet_v1_point_cloud_dir, '03001627/point_cloud_clean')
+
+    para_config_gan['noisy_ae_ckpt'] =  config.AE_scannet_chair_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_chair_c2c_ShapeNetV2_ckpt
+
+elif cat_name == 'scannet_table':
+    para_config_gan['real_point_cloud_dir'] = config.real_scannet_table_aligned_data_dir
+    para_config_gan['point_cloud_dir'] =  os.path.join(config.ShapeNet_v1_point_cloud_dir, '04379243/point_cloud_clean')
+
+    para_config_gan['noisy_ae_ckpt'] =  config.AE_scannet_table_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_table_c2c_ShapeNetV2_ckpt
+
 NOISY_TRAIN_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config_gan['real_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval')
-CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval')
+if 'v1' in para_config_gan['point_cloud_dir']:
+    CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
+else:    
+    CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 NOISY_TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config_gan['real_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test')
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+LOG_DIR = os.path.join('run_real', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -210,9 +213,6 @@ def train():
 
                     noise_cur = NOISY_TRAIN_DATASET.next_batch()
                     clean_cur = CLEAN_TRAIN_DATASET.next_batch()
-
-                    if para_config_gan['clean_data_aug'] is not None:
-                        clean_cur = CLEAN_TRAIN_DATASET.aug_data_batch(clean_cur, scale_low=para_config_gan['clean_data_aug']['scale_low'],scale_high=para_config_gan['clean_data_aug']['scale_high'], rot=para_config_gan['clean_data_aug']['rot'],snap2ground=para_config_gan['clean_data_aug']['snap2ground'],trans=para_config_gan['clean_data_aug']['trans'])
                 
                     feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
@@ -243,9 +243,10 @@ def train():
                               fake_clean_reconstr, summary_op], 
                               feed_dict=feed_dict)
                     
-                    # save currently generated
-                    pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans_train', 'reconstr_%d'%(i)))
-                    pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans_train', 'input_noisy_%d'%(i)))
+                    if i % para_config_gan['save_interval'] == 0:
+                        # save currently generated
+                        pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans_train', 'reconstr_%d'%(i)))
+                        pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans_train', 'input_noisy_%d'%(i)))
 
                     # terminal prints
                     log_string('%s training %d snapshot: '%(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), i))

@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'plane'
+cat_name = 'chair'
 
 loss = 'emd' # using emd loss against gt
 
@@ -32,7 +32,7 @@ para_config_gan = {
     'exp_name': '%s_pcl2pcl_gan_3D-EPN_GT_noGAN-continue'%(cat_name),
     'random_seed': None,
 
-    'recover_ckpt': '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/pcl2pcl_wGT_noGAN/log_plane_pcl2pcl_gan_3D-EPN_GT_noGAN_emd_2019-03-14-16-47-31/ckpts/model_3000.ckpt',
+    'recover_ckpt': '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/pcl2pcl_wGT_noGAN/log_chair_pcl2pcl_gan_3D-EPN_GT_noGAN_emd_2019-03-14-16-45-22/ckpts/model_3000.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,

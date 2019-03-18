@@ -152,7 +152,7 @@ class DemoPointCloudDataset:
         return data_batch
 
 class ShapeNetPartPointsDataset:
-    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=True):
+    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=False):
         '''
         part_point_cloud_dir: the directory contains the oringal ply point clouds
         batch_size:
@@ -396,7 +396,7 @@ class ShapeNetPartPointsDataset:
         return self.npoint
 
 class ShapeNetPartPointsDataset_V1:
-    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=True):
+    def __init__(self, part_point_cloud_dir, batch_size=50, npoint=2048, shuffle=True,  split='train', extra_ply_point_clouds_list=None, random_seed=None, preprocess=False):
         '''
         part_point_cloud_dir: the directory contains the oringal ply point clouds
         batch_size:
@@ -408,7 +408,6 @@ class ShapeNetPartPointsDataset_V1:
                                      note that only use it in test time, 
                                      these point clouds will be inserted in front of the point cloud list,
                                      which means extra clouds get to be tested first
-        random_seed: not used for now, debug needed
         '''
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -842,7 +841,7 @@ class RealWorldPointsDataset:
 
         # list of meshes
         self.meshes = self._read_all_meshes(self.mesh_dir) # a list of trimeshes
-        self._preprocess_meshes(self.meshes)
+        self._preprocess_meshes_as_ShapeNetV2(self.meshes) # NOTE: using different processing...
 
         self.point_clouds = self._pre_sample_points(self.meshes)
 
@@ -904,6 +903,29 @@ class RealWorldPointsDataset:
             mesh.apply_translation(trans_v) # translate the center bbox bottom to ori
 
             mesh.apply_scale(scale_factor)
+        
+    def _preprocess_meshes_as_ShapeNetV2(self, meshes):
+        '''
+        the input meshes are pre-aligned facing -z and snapped onto the ground.
+        then, make the diagonal length of the axis aligned bounding box around the shape is equal to 1
+        center object bbox center to the original
+        '''
+        for mesh in meshes:
+            
+            pts_min = np.amin(mesh.vertices, axis=0)
+            pts_min[1] = 0 # using the real height
+            pts_max = np.amax(mesh.vertices, axis=0)
+            diag_len = np.linalg.norm(pts_max - pts_min)
+
+            scale_factor = 1.0 / diag_len
+
+            bbox_center = (pts_max + pts_min) / 2.0
+
+            trans_v = -bbox_center 
+            mesh.apply_translation(trans_v) # translate the center of bbox to ori
+
+            mesh.apply_scale(scale_factor)
+        return
     
     def _read_all_meshes(self, mesh_dir):
         meshes_cache_filename = os.path.join(os.path.dirname(mesh_dir), 'meshes_cache_%s.pickle'%(self.split))
@@ -995,27 +1017,31 @@ class RealWorldPointsDataset:
 
 
 if __name__=='__main__':
+    '''
     para_config_gan = {}
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/02958343/point_cloud_clean'
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
 
     NOISY_TRAIN_DATASET = ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=12, npoint=2048, shuffle=True, split='trainval', preprocess=False)
-
     '''
+
+    
     REALDATASET = RealWorldPointsDataset('/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud', batch_size=6, npoint=2048,  shuffle=False, split='trainval', random_seed=0)
 
     data_batch = REALDATASET.next_batch()
     pc_util.write_ply(data_batch[0], 'real_data.ply')
     pc_util.write_ply(data_batch[1], 'real_data_1.ply')
     pc_util.write_ply(data_batch[2], 'real_data_2.ply')
-    '''
-
     
+
+    '''
     TRAIN_DATASET = ShapeNetPartPointsDataset('/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean', batch_size=6, npoint=2048,  shuffle=False, split='test', random_seed=0)
 
     data_batch = TRAIN_DATASET.next_batch_noise_partial_by_percentage()
     pc_util.write_ply(data_batch[0], 'data.ply')
+    '''
+
     #data_batch = TRAIN_DATASET.aug_data_batch(data_batch, rot=False, trans=0.1, snap2ground=False)
     #pc_util.write_ply(data_batch[0], 'data_aug.ply')
 

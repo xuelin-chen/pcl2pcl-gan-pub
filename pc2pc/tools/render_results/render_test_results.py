@@ -66,7 +66,7 @@ def read_ply_xyz(filename):
 
 def get_all_filnames(dir, nb=30):
     all_filenames = [ os.path.join(dir, f) for f in os.listdir(dir)]
-    #all_filenames.sort()
+    all_filenames.sort()
     return all_filenames[:nb]
 
 def add_point_cloud_mesh_to_scene(point_cloud, scene, pose, pts_colors):
@@ -178,7 +178,7 @@ def render_big_gallery(results_dir, nb=30, pts_colors=[0.5,0.5,0.5], draw_text=F
     r.delete()
 
     return big_gallery
-
+'''
 if __name__=='__main__':
     nb_chairs_to_show = 50
     cat_name = 'table'
@@ -201,5 +201,19 @@ if __name__=='__main__':
     #big_1_img.save('exp_denoise_%s_%s.png'%(exp_name, cat_name))
     big_1_img.save(out_filename)
     print(out_filename)
+'''
+if __name__=='__main__':
+    nb_chairs_to_show = 50
 
+    test_results_log_dir_1 = '/workspace/pointnet2/pc2pc/test_real/test_MP_chair/pcl2pcl_test/log_test_MP_chair_real_pcl2pcl_m2440_2019-03-18-15-26-43'
+    out_filename = 'MP_chair_m2440.png'
+
+    input_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','input'), nb_chairs_to_show, [.5,0.5,.5],draw_text=True)
+    recon_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), nb_chairs_to_show, [0,0,1])
+    overlaid_1 = render_big_gallery_overlay(os.path.join(test_results_log_dir_1, 'pcloud','input'), os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), [.5,.5,.5], [0,0,1], nb_chairs_to_show)
+
+    big_1_im = np.concatenate([input_color_arr_1, recon_color_arr_1, overlaid_1], axis=1)
+    big_1_img = Image.fromarray(big_1_im)
+    big_1_img.save(out_filename)
+    print(out_filename)
     

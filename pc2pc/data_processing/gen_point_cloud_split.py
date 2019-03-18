@@ -2,10 +2,10 @@ import os, sys
 import numpy as np
 import pickle
 
-point_cloud_dir = '/workspace/pointnet2/pc2pc/data/ShapeNet_v1_point_cloud/04379243/point_cloud_clean'
+point_cloud_dir = '/workspace/pointnet2/pc2pc/data/kitti_3D_detection/frustum_data_for_pcl2pcl/point_cloud_val'
 
 all_ply_filenames = [f for f in os.listdir(point_cloud_dir)]
-print('Toal: %d'%(len(all_ply_filenames)))
+print('Total: %d'%(len(all_ply_filenames)))
 
 train_portion = 0.85
 val_portion = 0.05

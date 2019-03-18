@@ -23,22 +23,17 @@ import tf_util
 import pc_util
 from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
+import config
+
+cat_name = 'MP_table'
+ckpt_idx = '630'
 
 # paras for autoencoder
 para_config_gan = {
-    'exp_name': 'real_pcl2pcl_renormed_m4100',
+    'exp_name': '%s_real_pcl2pcl_m%s'%(cat_name, ckpt_idx),
     'random_seed': None, # None for totally random
 
-    'real_point_cloud_dir': '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud',
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
-
-    # noisy AE, clean AE and pcl2pcl gan checkpoint model
-    'noisy_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_data_aug_c2c_2019-02-26-17-49-01/ckpts/model_1280.ckpt',
-    'clean_ae_ckpt': '/workspace/pointnet2/pc2pc/run_ae_renorm/log_ae_chair_c2c_2019-02-26-17-37-38/ckpts/model_1670.ckpt',
-
-    'pcl2pcl_gan_ckpt': '/workspace/pointnet2/pc2pc/run_pcl2pcl/log_real_pcl2pcl_gan_renormed_2019-02-27-11-51-18/ckpts/model_4100.ckpt',
-
-    'batch_size': 48, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
+    'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,
@@ -47,12 +42,10 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
-    #'loss': 'emd',
     'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
     #'eval_loss': 'emd',
     'eval_loss': 'hausdorff',
-    #'eval_loss': 'chamfer',
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -84,11 +77,31 @@ para_config_ae = {
     'activation_fn': tf.nn.relu,
 }
 
+if cat_name == 'scannet_chair':
+    para_config_gan['real_point_cloud_dir'] = config.real_scannet_chair_aligned_data_dir
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_real/run_scannet_chair/pcl2pcl/log_scannet_chair_real_pcl2pcl_gan_2019-03-16-20-38-43/ckpts/model_%s.ckpt'%(ckpt_idx)
+
+elif cat_name == 'scannet_table':
+    para_config_gan['real_point_cloud_dir'] = config.real_scannet_table_aligned_data_dir
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_real/run_scannet_table/pcl2pcl/log_scannet_table_real_pcl2pcl_gan_2019-03-16-21-55-56/ckpts/model_%s.ckpt'%(ckpt_idx)
+
+elif cat_name == 'MP_chair':
+    para_config_gan['real_point_cloud_dir'] = config.real_MP_chair_aligned_data_dir
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_real/run_scannet_chair/pcl2pcl/log_scannet_chair_real_pcl2pcl_gan_2019-03-16-20-38-43/ckpts/model_%s.ckpt'%(ckpt_idx)
+
+elif cat_name == 'MP_table':
+    para_config_gan['real_point_cloud_dir'] = config.real_MP_table_aligned_data_dir
+
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_real/run_scannet_table/pcl2pcl/log_scannet_table_real_pcl2pcl_gan_2019-03-16-21-55-56/ckpts/model_%s.ckpt'%(ckpt_idx)
+
 NOISY_TEST_DATASET = shapenet_pc_dataset.RealWorldPointsDataset(para_config_gan['real_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='test')
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_pcl2pcl', 'log_test_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
+LOG_DIR = os.path.join('test_real', 'test_%s'%(cat_name), 'pcl2pcl_test', 'log_test_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
@@ -121,10 +134,6 @@ def test():
             _, _, _, _, _, _, fake_clean_reconstr, eval_loss = latent_gan.model()
             
             saver = tf.train.Saver(max_to_keep=None)
-
-        # print
-        log_string('Net layers:')
-        log_string(str(latent_gan))
 
         # Create a session
         config = tf.ConfigProto()
@@ -163,11 +172,12 @@ def test():
             pc_util.write_ply_batch(np.asarray(all_inputs), os.path.join(LOG_DIR, 'pcloud', 'input'))
             pc_util.write_ply_batch(np.asarray(all_recons), os.path.join(LOG_DIR, 'pcloud', 'reconstruction'))
             eval_loss_mean = np.mean(all_eval_losses)
-            print('Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
+            print('(Useless) Eval loss (%s) on all data: %f'%(para_config_gan['eval_loss'], np.mean(all_eval_losses)))
+            print(LOG_DIR)
             return eval_loss_mean
            
 if __name__ == "__main__":
-    log_string('pid: %s'%(str(os.getpid())))
+
     '''
     #model_index = [100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,1600,1700,1800,1900,2000]
     model_index = [100,200,300,400,500,600,700,800,900]

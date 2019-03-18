@@ -8,8 +8,16 @@ EPN_dataset_train_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet
 EPN_dataset_test_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc'
 EPN_results_dir = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/EPN_results'
 
-real_chair_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_alilgned_v2/point_cloud'
-real_chair_ori_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_Y_extracted'
+real_scannet_chair_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_aligned/point_cloud'
+real_scannet_chair_ori_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_chairs_Y_extracted'
+
+real_scannet_table_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/scannet_v2_tables_aligned/point_cloud'
+
+real_MP_chair_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/MatterPort_v1_chair_Yup_aligned/point_cloud'
+real_MP_table_aligned_data_dir = '/workspace/pointnet2/pc2pc/data/MatterPort_v1_table_Yup_aligned/point_cloud'
+
+kitti_car_data_train_dir = '/workspace/pointnet2/pc2pc/data/kitti_3D_detection/frustum_data_for_pcl2pcl/point_cloud_train'
+kitti_car_data_test_dir = '/workspace/pointnet2/pc2pc/data/kitti_3D_detection/frustum_data_for_pcl2pcl/point_cloud_val'
 
 #################### models for synthetic data ################################
 
@@ -44,6 +52,11 @@ AE_chair_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_chair/ae/lo
 AE_table_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_table/ae/log_3DEPN_ae_table_2019-03-06-16-10-10/ckpts/model_485.ckpt'
 
 AE_plane_np2np_EPN_ckpt = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_plane/ae/log_3DEPN_ae_plane_2019-03-06-17-21-52/ckpts/model_450.ckpt'
+
+######################### AE ckpt - scannet real chairs and table
+AE_scannet_chair_ckpt = '/workspace/pointnet2/pc2pc/run_real/run_scannet_chair/ae/log_scannet_chair_real_ae_2019-03-16-19-13-39/ckpts/model_1720.ckpt'
+
+AE_scannet_table_ckpt = '/workspace/pointnet2/pc2pc/run_real/run_scannet_table/ae/log_scannet_table_real_ae_2019-03-16-17-01-39/ckpts/model_1630.ckpt'
 
 if __name__ == '__main__':
         

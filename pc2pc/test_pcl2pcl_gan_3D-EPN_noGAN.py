@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'car'
+cat_name = 'table'
 note = 'noGAN'
 
 para_config_gan = {
@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     model_dir = os.path.dirname(para_config_gan['pcl2pcl_gan_ckpt'])
 
-    for model_idx in range(200, 2001, 10):
+    for model_idx in range(200, 1801, 10):
         model_ckpt_filename = os.path.join(model_dir, 'model_%d.ckpt'%(model_idx))
         para_config_gan['pcl2pcl_gan_ckpt'] = model_ckpt_filename
 

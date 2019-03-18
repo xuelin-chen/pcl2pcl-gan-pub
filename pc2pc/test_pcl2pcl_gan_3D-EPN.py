@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'table'
+cat_name = 'car'
 loss = 'hausdorff'
 
 para_config_gan = {
@@ -100,7 +100,11 @@ elif cat_name == 'car':
     para_config_gan['3D-EPN_train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
     para_config_gan['3D-EPN_test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
 
-    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_retrain-SN1_hausdorff_2019-03-12-18-46-31-TMP/ckpts/model_710.ckpt'
+    para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_retrain-SN1_hausdorff_2019-03-12-18-46-31/ckpts/model_710.ckpt'
+
+if not os.path.exists(para_config_gan['pcl2pcl_gan_ckpt']):
+    print('pcl2pcl_gan_ckpt not exist!')
+    exit()
 
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
@@ -109,7 +113,7 @@ SCAN_PC_DIR = config.ShapeNet_v1_point_cloud_dir
 def prepare4test():
     #################### dirs, code backup and etc for this run ##########################
     model_name = para_config_gan['pcl2pcl_gan_ckpt'].split('/')[-1].split('.')[0]
-    para_config_gan['LOG_DIR'] = os.path.join('test_3D-EPN', 'test_%s'%(cat_name), 'pcl2pcl_test_1ST-TRAIN', 'all_models_ShapeNetV1-GT', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+    para_config_gan['LOG_DIR'] = os.path.join('test_3D-EPN', 'test_%s'%(cat_name), 'pcl2pcl_early-2nd_test', 'all_models_ShapeNetV1-GT', 'log_test_' + para_config_gan['exp_name'] + '_' + model_name + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
     print(para_config_gan['LOG_DIR'])
     if not os.path.exists(para_config_gan['LOG_DIR']): os.makedirs(para_config_gan['LOG_DIR'])
 
@@ -207,7 +211,7 @@ if __name__ == "__main__":
 
     model_dir = os.path.dirname(para_config_gan['pcl2pcl_gan_ckpt'])
 
-    for model_idx in range(100, 3001, 10):
+    for model_idx in range(100, 2661, 10):
         model_ckpt_filename = os.path.join(model_dir, 'model_%d.ckpt'%(model_idx))
         para_config_gan['pcl2pcl_gan_ckpt'] = model_ckpt_filename
 

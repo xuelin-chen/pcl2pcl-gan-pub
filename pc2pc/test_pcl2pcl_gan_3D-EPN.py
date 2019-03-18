@@ -102,8 +102,8 @@ elif cat_name == 'car':
 
     para_config_gan['pcl2pcl_gan_ckpt'] = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_car/pcl2pcl/log_car_pcl2pcl_gan_3D-EPN_retrain-SN1_hausdorff_2019-03-12-18-46-31/ckpts/model_710.ckpt'
 
-if not os.path.exists(para_config_gan['pcl2pcl_gan_ckpt']):
-    print('pcl2pcl_gan_ckpt not exist!')
+if not os.path.exists(os.path.dirname(para_config_gan['pcl2pcl_gan_ckpt'])):
+    print('pcl2pcl_gan_ckpt not exist! %s'%(os.path.dirname(para_config_gan['pcl2pcl_gan_ckpt'])))
     exit()
 
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)

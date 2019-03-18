@@ -40,6 +40,7 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
+    'loss': 'hausdorff'
     'eval_loss': 'hausdorff',
 
     'latent_dim': 128,

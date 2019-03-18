@@ -41,6 +41,7 @@ para_config_gan = {
     'save_interval': 10, # unit in epoch
 
     'loss': 'hausdorff',
+    'lambda': 1.0, # parameter on back-reconstruction loss
     'eval_loss': 'hausdorff',
 
     'latent_dim': 128,

@@ -23,7 +23,7 @@ keyword2filter = None
 
 #test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
 #test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/test_3D-EPN/test_plane/clean_ae_test'
+test_dir = '/workspace/pointnet2/pc2pc/test_3D-EPN/test_car/pcl2pcl_noReconLoss_test/all_models_ShapeNetV1-GT'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -80,7 +80,11 @@ def eval_result_folder(result_dir):
     avg_comp_perct = np.mean(all_comp_percentage)
     avg_comp_avg_dist = np.mean(all_comp_avg_dist)
 
-    print('%s - acc_avg_distance, acc_percentage, completeness-avg_distance, completeness-percentage: %s,%s,%s,%s'%(result_dir.split('/')[-1], str(avg_acc_avg_dist), str(avg_acc_perct), str(avg_comp_avg_dist), str(avg_comp_perct)))
+    f1_score = evaluation_utils.compute_F1_score(avg_acc_perct, avg_comp_perct)
+
+    print('%s:'%(result_dir.split('/')[-1]))
+    print('\tacc_avg_distance, acc_percentage, completeness-avg_distance, completeness-percentage, F1: %s,%s,%s,%s,%s'%(str(avg_acc_avg_dist), str(avg_acc_perct), str(avg_comp_avg_dist), str(avg_comp_perct), str(f1_score)))
+
 
 result_folders = os.listdir(test_dir)
 result_folders.sort()

@@ -79,7 +79,7 @@ if cat_name == 'car':
     para_config_gan['kitti_train_point_cloud_dir'] = config.kitti_car_data_train_dir
     para_config_gan['kitti_test_point_cloud_dir'] = config.kitti_car_data_test_dir
     
-    para_config_gan['noisy_ae_ckpt'] = config.?
+    para_config_gan['noisy_ae_ckpt'] = config.AE_kitti_car_ckpt
     para_config_gan['clean_ae_ckpt'] = config.AE_car_c2c_ShapeNetV1_ckpt
     # NOTE: for car, must use shapenet v1 data and ae trained from shapenet v1
 
@@ -254,7 +254,7 @@ def train():
                     if i % para_config_gan['save_interval'] == 0:
                         pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
                         pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
-                        pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
+                        #pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
                     
                     # terminal prints
                     log_string('%s training %d snapshot: '%(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), i))

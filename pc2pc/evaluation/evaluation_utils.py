@@ -82,6 +82,10 @@ def completeness(P_recon, P_gt, thre=0.01):
     fraction = matched.shape[0] / npoint
     return fraction, avg_min_dist
 
+def compute_F1_score(precision, recall):
+    f = 2 * precision * recall / (precision + recall)
+    return f
+
 if __name__=='__main__':
 
     p_gt = np.array([[0,1,0],[1,0,0], [2,-1,0]])

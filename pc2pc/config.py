@@ -58,6 +58,10 @@ AE_scannet_chair_ckpt = '/workspace/pointnet2/pc2pc/run_real/run_scannet_chair/a
 
 AE_scannet_table_ckpt = '/workspace/pointnet2/pc2pc/run_real/run_scannet_table/ae/log_scannet_table_real_ae_2019-03-16-17-01-39/ckpts/model_1630.ckpt'
 
+
+########################## AE ckpt - kitti car
+AE_kitti_car_ckpt = '/workspace/pointnet2/pc2pc/run_kitti/run_car/ae/log_kitti_ae_car_2019-03-18-21-31-29/ckpts/model_455.ckpt'
+
 if __name__ == '__main__':
         
     all_local_vars = locals().copy()

@@ -26,11 +26,12 @@ import config
 
 cat_name = 'chair'
 note = 'varying_weight'
+lmda = 0.25
 
 loss = 'hausdorff'
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_3D-EPN_%s'%(cat_name, note),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN_%s_lambda=%s'%(cat_name, note, lmda),
     'random_seed': None,
 
     'recover_ckpt': None,
@@ -45,7 +46,7 @@ para_config_gan = {
     'save_interval': 10, # unit in epoch
 
     'loss': loss,
-    'lambda': 1.0, # parameter on back-reconstruction loss
+    'lambda': lmda, # parameter on back-reconstruction loss
     'eval_loss': loss,
 
     'latent_dim': 128,
@@ -125,7 +126,7 @@ NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_conf
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl_varying_lambda', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
@@ -167,7 +168,7 @@ def train():
         with tf.device('/gpu:'+str(0)):
             latent_gan = PCL2PCLGAN(para_config_gan, para_config_ae)
             #print_trainable_vars()
-            G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model()
+            G_loss, G_tofool_loss, reconstr_loss, D_loss, D_fake_loss, D_real_loss, fake_clean_reconstr, eval_loss = latent_gan.model_varying_weight()
             G_optimizer, D_optimizer = latent_gan.optimize(G_loss, D_loss)
 
             # metrics for tensorboard visualization
@@ -286,7 +287,7 @@ def train():
                     if i % para_config_gan['save_interval'] == 0:
                         pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
                         pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
-                        pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
+                        #pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
                     
                     # terminal prints
                     log_string('%s training %d snapshot: '%(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), i))

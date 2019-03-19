@@ -24,9 +24,9 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'chair'
+cat_name = 'table'
 note = 'varying_weight'
-lmda = 0.75
+lmda = 0.25
 
 loss = 'hausdorff'
 

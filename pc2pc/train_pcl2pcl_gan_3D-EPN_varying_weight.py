@@ -26,7 +26,7 @@ import config
 
 cat_name = 'table'
 note = 'varying_weight'
-lmda = 0.25
+lmda = 0.75
 
 loss = 'hausdorff'
 

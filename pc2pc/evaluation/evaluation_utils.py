@@ -50,9 +50,11 @@ def accuracy(P_recon, P_gt, thre=0.01):
 
     min_dists = np.amin(dists, axis=1) # 1 x N
 
+    avg_dist = np.mean(min_dists)
+
     matched = min_dists[min_dists < thre]
     fraction = matched.shape[0] / npoint
-    return fraction
+    return fraction, avg_dist
 
 def completeness(P_recon, P_gt, thre=0.01):
     '''

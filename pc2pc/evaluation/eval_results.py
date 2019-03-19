@@ -49,7 +49,8 @@ def eval_result_folder(result_dir):
     re_pc_names = os.listdir(result_point_cloud_dir)
     re_pc_names.sort()
 
-    all_avg_dist = []
+    all_acc_percentage = []
+    all_acc_avg_dist = []
     all_comp_percentage = []
     all_comp_avg_dist = []
     for re_pc_n  in (re_pc_names):
@@ -66,18 +67,20 @@ def eval_result_folder(result_dir):
         if re_pc_pts.shape[0] < 2048:
             re_pc_pts = pc_util.sample_point_cloud(re_pc_pts, 2048)
 
-        avg_d = evaluation_utils.avg_dist(re_pc_pts, gt_pc_pts)
+        acc_perct, acc_avg_dist = evaluation_utils.accuracy(re_pc_pts, gt_pc_pts, thre=thre)
         comp_perct, comp_avg_dist = evaluation_utils.completeness(re_pc_pts, gt_pc_pts, thre=thre)
 
-        all_avg_dist.append(avg_d)
+        all_acc_percentage.append(acc_perct)
+        all_acc_avg_dist.append(acc_avg_dist)
         all_comp_percentage.append(comp_perct)
         all_comp_avg_dist.append(comp_avg_dist)
 
-    avg_acc_dist = np.mean(all_avg_dist)
+    avg_acc_perct = np.mean(all_acc_percentage)
+    avg_acc_avg_dist = np.mean(all_acc_avg_dist)
     avg_comp_perct = np.mean(all_comp_percentage)
     avg_comp_avg_dist = np.mean(all_comp_avg_dist)
 
-    print('%s - avg_acc_distance, completeness-avg_distance, completeness-percentage: %s,%s, %s'%(result_dir.split('/')[-1], str(avg_acc_dist), str(avg_comp_avg_dist), str(avg_comp_perct)))
+    print('%s - acc_avg_distance, acc_percentage, completeness-avg_distance, completeness-percentage: %s,%s,%s,%s'%(result_dir.split('/')[-1], str(avg_acc_avg_dist), str(avg_acc_perct), str(avg_comp_avg_dist), str(avg_comp_perct)))
 
 result_folders = os.listdir(test_dir)
 result_folders.sort()

@@ -32,10 +32,9 @@ para_config_gan = {
     'exp_name': '%s_pcl2pcl_gan_%d-percentge_EMD'%(cat_name, pts_remove_percentage*100),
     'random_seed': 0, # None for totally random
 
-    #'extra_point_clouds_list': ['data/0_extra.ply', 'data/1_extra.ply'],
     'extra_point_clouds_list': None,
 
-    'batch_size': 24, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
+    'batch_size': 1, # important NOTE: batch size should be the same with that of competetor, otherwise, the randomness is not fixed!
     'lr': 0.0001,
     'beta1': 0.5,
     'epoch': 3001,
@@ -44,12 +43,9 @@ para_config_gan = {
     'output_interval': 1, # unit in epoch
     'save_interval': 10, # unit in epoch
 
-    'loss': 'emd',
-    #'loss': 'hausdorff',
+    'loss': 'hausdorff',
     'lambda': 1.0, # parameter on back-reconstruction loss
-    'eval_loss': 'emd',
-    #'eval_loss': 'hausdorff',
-    #'eval_loss': 'chamfer',
+    'eval_loss': 'hausdorff',
 
     # noise parameters
     'noise_mu': 0.0, 

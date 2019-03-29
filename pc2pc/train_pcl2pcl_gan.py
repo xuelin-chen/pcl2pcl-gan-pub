@@ -27,10 +27,10 @@ cat_name = 'table'
 loss = 'hausdorff'
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_percentage-redo'%(cat_name),
+    'exp_name': '%s_pcl2pcl_gan_percentage-redo-continue'%(cat_name),
     'random_seed': None,
 
-    'recover_ckpt': None,
+    'recover_ckpt': '/workspace/pointnet2/pc2pc/run_synthetic/run_table/pcl2pcl/log_table_pcl2pcl_gan_percentage-redo_hausdorff_2019-03-07-20-52-12/ckpts/model_370.ckpt',
 
     'batch_size': 24,
     'lr': 0.0001,
@@ -84,31 +84,34 @@ para_config_ae = {
     'activation_fn': tf.nn.relu,
 }
 
+if para_config_gan['recover_ckpt'] is not None and not os.path.exists(para_config_gan['recover_ckpt']+'.index'):
+    print('recover training ckpt not exist!%s'%(para_config_gan['recover_ckpt']))
+    exit()
+
 if cat_name == 'chair':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean'
-    #para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_np2np_2019-02-15-17-03-41/ckpts/model_1850.ckpt'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_percent_np2np_2019-03-01-21-13-28/ckpts/model_1800.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_chair/ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt'
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_chair/ae/log_ae_chair_percent_np2np_2019-03-01-21-13-28/ckpts/model_1800.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_chair/ae/log_ae_chair_c2c_2019-02-14-20-05-24/ckpts/model_1600.ckpt'
 
 elif cat_name == 'table':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/04379243/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_percent_np2np_2019-03-01-21-20-13/ckpts/model_1540.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_table/ae/log_ae_table_c2c_2019-02-28-14-52-10/ckpts/model_1810.ckpt'
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_table/ae/log_ae_table_percent_np2np_2019-03-01-21-20-13/ckpts/model_1540.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_table/ae/log_ae_table_c2c_2019-02-28-14-52-10/ckpts/model_1810.ckpt'
 
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02691156/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_np2np_2019-03-04-16-22-53/ckpts/model_1810.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_plane/ae/log_ae_plane_percent_c2c_2019-03-04-16-22-26/ckpts/model_1820.ckpt'
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_plane/ae/log_ae_plane_percent_np2np_2019-03-04-16-22-53/ckpts/model_1810.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_plane/ae/log_ae_plane_percent_c2c_2019-03-04-16-22-26/ckpts/model_1820.ckpt'
 
 elif cat_name == 'motorbike':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03790512/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_percentage_np2np_2019-03-04-17-00-31/ckpts/model_1950.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_motorbike/ae/log_ae_motorbike_c2c_2019-03-04-16-58-49/ckpts/model_1980.ckpt'
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_motorbike/ae/log_ae_motorbike_percentage_np2np_2019-03-04-17-00-31/ckpts/model_1950.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_motorbike/ae/log_ae_motorbike_c2c_2019-03-04-16-58-49/ckpts/model_1980.ckpt'
 
 elif cat_name == 'car':
     para_config_gan['point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/02958343/point_cloud_clean'
-    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/log_ae_car_percentage_np2np_2019-03-06-15-50-22/ckpts/model_1920.ckpt'
-    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_car/ae/log_ae_car_percentage_c2c_2019-03-06-15-50-06/ckpts/model_1900.ckpt'
+    para_config_gan['noisy_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_car/ae/log_ae_car_percentage_np2np_2019-03-06-15-50-22/ckpts/model_1920.ckpt'
+    para_config_gan['clean_ae_ckpt'] = '/workspace/pointnet2/pc2pc/run_synthetic/run_car/ae/log_ae_car_percentage_c2c_2019-03-06-15-50-06/ckpts/model_1900.ckpt'
 
 NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
 CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
@@ -117,7 +120,7 @@ NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_g
 #################### dirs, code backup and etc for this run ##########################
 #LOG_DIR = os.path.join('run_chair', 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 #LOG_DIR = os.path.join('run_chair', 'pcl2pcl4real', 'log_' + para_config_gan['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-LOG_DIR = os.path.join('run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_synthetic', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.mkdir(LOG_DIR)
 #if not os.path.exists(os.path.join(LOG_DIR, 'fake_cleans')): os.mkdir(os.path.join(LOG_DIR, 'fake_cleans'))

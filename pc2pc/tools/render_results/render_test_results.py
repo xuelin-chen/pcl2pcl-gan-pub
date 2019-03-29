@@ -202,7 +202,7 @@ if __name__=='__main__':
     big_1_img.save(out_filename)
     print(out_filename)
 '''
-def render_log_dir(log_dir, nb_im=50):
+def render_log_dir(log_dir, nb_im=50, with_gt=False):
     nb_chairs_to_show = nb_im
 
     test_results_log_dir_1 = log_dir
@@ -210,20 +210,25 @@ def render_log_dir(log_dir, nb_im=50):
 
     input_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','input'), nb_chairs_to_show, [.5,0.5,.5],draw_text=True)
     recon_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), nb_chairs_to_show, [0,0,1])
-    overlaid_1 = render_big_gallery_overlay(os.path.join(test_results_log_dir_1, 'pcloud','input'), os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), [.5,.5,.5], [0,0,1], nb_chairs_to_show)
+    overlaid_1 = render_big_gallery_overlay(os.path.join(test_results_log_dir_1, 'pcloud','input'), os.path.join(test_results_log_dir_1, 'pcloud','reconstruction'), [.5,.5,.5], [1,0,0], nb_chairs_to_show)
 
     big_1_im = np.concatenate([input_color_arr_1, recon_color_arr_1, overlaid_1], axis=1)
+
+    if with_gt:
+        gt_color_arr_1 = render_big_gallery(os.path.join(test_results_log_dir_1, 'pcloud','gt'), nb_chairs_to_show, [0,0,1])
+        big_1_im = np.concatenate([big_1_im, gt_color_arr_1], axis=1)
+
     big_1_img = Image.fromarray(big_1_im)
     big_1_img.save(out_filename)
     print(out_filename)
 
 if __name__=='__main__':
-
-    top_dir = '/workspace/pointnet2/pc2pc/test_real/test_MP_chair/pcl2pcl_2nd-train_test'
+    nb_renders = 100
+    top_dir = '/workspace/pointnet2/pc2pc/test_kitti/test_car/pcl2pcl_test/all_models_ShapeNetV1-GT'
 
     log_dirs = os.listdir(top_dir)
-
+    
     for log_d in log_dirs:
         print(log_d)
-        render_log_dir(os.path.join(top_dir, log_d))
+        render_log_dir(os.path.join(top_dir, log_d), nb_renders, False)
     

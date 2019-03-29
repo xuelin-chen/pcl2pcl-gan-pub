@@ -13,14 +13,14 @@ from tf_approxmatch import approx_match, match_cost
 from tf_hausdorff_distance import directed_hausdorff
 
 default_para_config = {
-    'exp_name': 'ae_emd_chair_2048',
-    'point_cloud_dir': '/workspace/pointnet2/pc2pc/data/ShapeNet_v2_point_cloud/03001627/point_cloud_clean',
+    'exp_name': 'ae',
 
-    'batch_size': 50,
-    'lr': 0.0005,
-    'epoch': 3001,
-    'output_interval': 30, # unit in batch
-    'test_interval': 40, # unit in epoch
+    'batch_size': 200,
+    'lr': 0.0005, # base starting learning rate
+    'decay_step': 7000000, # in samples, for chair data: 5000000 (~800 epoches), for table data: 7000000 (~800 epoches) 
+    'decay_rate': 0.5,
+    'clip_lr': 0.0001, # minimal learning rate for clipping lr
+    'epoch': 2001,
     
     'loss': 'emd',
 

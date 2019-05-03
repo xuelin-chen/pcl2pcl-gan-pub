@@ -5,25 +5,20 @@ from tqdm import tqdm
 import multiprocessing
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(BASE_DIR)
-sys.path.append(os.path.join(ROOT_DIR, '../utils'))
+PC2PC_DIR = os.path.dirname(BASE_DIR)
+print(BASE_DIR)
+print('BASE_DIR:', BASE_DIR)
+print('PC2PC_DIR: ', PC2PC_DIR)
+sys.path.append(os.path.join(PC2PC_DIR, '../utils'))
 import pc_util
+
+# result folder to evaluate
+test_dir = os.path.join(PC2PC_DIR, 'test_3D-EPN/test_pcl2pcl_car/all_models_ShapeNetV1-GT')
 
 num_workers = 5
 thre = 0.03
-#cat_name = 'car'
-#test_name = 'vanilla_ae_test'
-#test_name = 'N2N_ae_test'
-#test_name = 'pcl2pcl_test'
-#keyword2filter = '0-partial'
-#keyword2filter = '-perc'
-#keyword2filter = 'redo'
-#keyword2filter = '_gt-retrieved'
-keyword2filter = 'percentge_model'
 
-#test_dir = '/workspace/pointnet2/pc2pc/run_%s/%s'%(cat_name, test_name)
-#test_dir = '/workspace/pointnet2/pc2pc/run_3D-EPN/run_%s/%s'%(cat_name, test_name)
-test_dir = '/workspace/pointnet2/pc2pc/run_synthetic/run_motorbike/pcl2pcl_test'
+keyword2filter = None
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -31,18 +26,7 @@ def gt_isvalid(gt_points):
         return False
     return True
 
-def get_3D_EPN_GT_dir(result_dir):
-    if 'car' in result_dir:
-        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_car_gt'
-    elif 'chair' in result_dir:
-        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_chair_gt'
-    elif 'table' in result_dir:
-        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_table_gt'
-    elif 'plane' in result_dir:
-        return '/workspace/pointnet2/pc2pc/test_3D-EPN/GT/3D-EPN_plane_gt'
-
 def eval_result_folder(result_dir):
-    #gt_point_cloud_dir = get_3D_EPN_GT_dir(result_dir)
     gt_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'gt')
     result_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'reconstruction')
 

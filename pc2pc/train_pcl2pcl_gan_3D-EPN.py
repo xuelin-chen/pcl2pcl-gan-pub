@@ -24,8 +24,8 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'chair'
-note = 'varying_weight'
+cat_name = 'car'
+note = 'default'
 
 loss = 'hausdorff'
 
@@ -46,7 +46,7 @@ para_config_gan = {
 
     'loss': loss,
     'lambda': 1.0, # parameter on back-reconstruction loss
-    'eval_loss': loss,
+    'eval_loss': loss, # useless
 
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
@@ -84,8 +84,7 @@ if cat_name == 'chair':
     para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '03001627/point_cloud')
 
     para_config_gan['noisy_ae_ckpt'] = config.AE_chair_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_chair_c2c_ShapeNetV2_ckpt
-    # for chair, it is fine to use ae trained from shapenet v2
+    para_config_gan['clean_ae_ckpt'] = config.AE_chair_c2c_ShapeNetV1_ckpt
 
 elif cat_name == 'table':
     para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '04379243/point_cloud_clean')
@@ -93,8 +92,7 @@ elif cat_name == 'table':
     para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '04379243/point_cloud')
 
     para_config_gan['noisy_ae_ckpt'] = config.AE_table_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_table_c2c_ShapeNetV2_ckpt
-    # for table, it is fine to use ae trained from shapenet v2
+    para_config_gan['clean_ae_ckpt'] = config.AE_table_c2c_ShapeNetV1_ckpt
 
 elif cat_name == 'plane':
     para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02691156/point_cloud_clean')
@@ -102,11 +100,8 @@ elif cat_name == 'plane':
     para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02691156/point_cloud')
 
     para_config_gan['noisy_ae_ckpt'] = config.AE_plane_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_plane_c2c_ShapeNetV2_ckpt
-    # for plane, it is fine to use ae trained from shapenet v2
+    para_config_gan['clean_ae_ckpt'] = config.AE_plane_c2c_ShapeNetV1_ckpt
 
-elif cat_name == 'motorbike':
-    print()
 elif cat_name == 'car':
     para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02958343/point_cloud_clean')
     para_config_gan['3D-EPN_train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '02958343/point_cloud')
@@ -114,7 +109,6 @@ elif cat_name == 'car':
     
     para_config_gan['noisy_ae_ckpt'] = config.AE_car_np2np_EPN_ckpt
     para_config_gan['clean_ae_ckpt'] = config.AE_car_c2c_ShapeNetV1_ckpt
-    # NOTE: for car, must use shapenet v1 data and ae trained from shapenet v1
 
 if 'v1' in para_config_gan['point_cloud_dir']:
     print('Using ShapeNet-V1 data')
@@ -125,7 +119,8 @@ NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_conf
 NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+#LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'])
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 

@@ -21,6 +21,7 @@ import tf_util
 import pc_util
 import shapenet_pc_dataset
 import autoencoder
+import config
 
 cat_name = 'car'
 
@@ -30,14 +31,16 @@ para_config = {
 
     'batch_size': 200,
     'lr': 0.0005, # base starting learning rate
-    #'decay_step': 7000000, # in samples, for chair data: 5000000 (~800 epoches), for table data: 7000000 (~800 epoches) 
     'decay_rate': 0.5,
     'clip_lr': 0.0001, # minimal learning rate for clipping lr
     'epoch': 2001,
-    #'output_interval': 10, # unit in batch
     'save_interval': 5, # unit in epoch
     
     'loss': 'emd',
+
+    #################################
+    # do not change variables below #
+    #################################
 
     # encoder
     'latent_code_dim': 128,
@@ -55,23 +58,23 @@ para_config = {
 }
 
 if cat_name == 'chair':
-    para_config['train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/03001627/point_cloud'
-    para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/03001627/point_cloud'
+    para_config['train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '03001627/point_cloud')
+    para_config['test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '03001627/point_cloud')
     para_config['decay_step'] = 5760000 # ~120 epochs
     para_config['output_interval'] = 30
 elif cat_name == 'table':
-    para_config['train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/04379243/point_cloud'
-    para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/04379243/point_cloud'
+    para_config['train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '04379243/point_cloud')
+    para_config['test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '04379243/point_cloud')
     para_config['decay_step'] = 7680000 # ~120 epochs
     para_config['output_interval'] = 30
 elif cat_name == 'plane':
-    para_config['train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02691156/point_cloud'
-    para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02691156/point_cloud'
+    para_config['train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '02691156/point_cloud')
+    para_config['test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02691156/point_cloud')
     para_config['decay_step'] = 5760000 # ~120 epochs
     para_config['output_interval'] = 10
 elif cat_name == 'car':
-    para_config['train_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/shapenet_dim32_sdf_pc/02958343/point_cloud'
-    para_config['test_point_cloud_dir'] = '/workspace/pointnet2/pc2pc/data/3D-EPN_dataset/test-images_dim32_sdf_pc/02958343/point_cloud'
+    para_config['train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '02958343/point_cloud')
+    para_config['test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02958343/point_cloud')
     para_config['decay_step'] = 5760000 # ~120 epochs
     para_config['output_interval'] = 10
 
@@ -79,8 +82,9 @@ TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['tr
 TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['test_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
 
 #################### back up code for this run ##########################
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-print(LOG_DIR)
+#LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'])
+print('Log dir:', LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)

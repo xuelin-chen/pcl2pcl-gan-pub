@@ -24,7 +24,7 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'car'
+cat_name = 'table'
 note = 'default'
 
 loss = 'hausdorff'
@@ -115,8 +115,8 @@ if 'v1' in para_config_gan['point_cloud_dir']:
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 else:
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
-NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
-NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
+NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='train', preprocess=False)
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='val', preprocess=False)
 
 #################### dirs, code backup and etc for this run ##########################
 #LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))

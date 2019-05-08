@@ -3,6 +3,7 @@ import numpy as np
 import evaluation_utils
 from tqdm import tqdm
 import multiprocessing
+from random import sample
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PC2PC_DIR = os.path.dirname(BASE_DIR)
@@ -13,9 +14,10 @@ sys.path.append(os.path.join(PC2PC_DIR, '../utils'))
 import pc_util
 
 # result folder to evaluate
-test_dir = os.path.join(PC2PC_DIR, 'test_3D-EPN/test_pcl2pcl_car/all_models_ShapeNetV1-GT')
+test_dir = os.path.join(PC2PC_DIR, 'test_3D-EPN/val_pcl2pcl_car/all_models_ShapeNetV1-GT')
 
-num_workers = 5
+num_samples = None
+num_workers = 70
 thre = 0.03
 
 keyword2filter = None
@@ -32,6 +34,10 @@ def eval_result_folder(result_dir):
 
     re_pc_names = os.listdir(result_point_cloud_dir)
     re_pc_names.sort()
+
+    # randomly evaluate a part of the results
+    if num_samples is not None:
+        re_pc_names = sample(re_pc_names, num_samples)
 
     all_acc_percentage = []
     all_acc_avg_dist = []

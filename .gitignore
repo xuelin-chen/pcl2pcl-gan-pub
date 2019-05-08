@@ -3,6 +3,7 @@
 *.o
 **/run
 **/data
+**/data_upload
 *.pyc
 **/scannet
 **/run*

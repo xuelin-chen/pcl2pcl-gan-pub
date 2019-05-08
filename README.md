@@ -6,9 +6,9 @@ Implementation of arxiv preprint paper <a href="https://128.84.21.199/abs/1904.0
 The code is tested with Python 3.5, TensorFlow 1.5, CUDA 9.0 on Ubuntu. 
 
 ### Installation
-## Compile Customized TF Operators from PointNet2
+#### Compile Customized TF Operators from PointNet2
 Instructions can be found from <a href="https://github.com/charlesq34/pointnet2" target="_blank">PointNet2</a>.
-## Compile the EMD/Chamfer losses (CUDA implementations from <a href="https://github.com/charlesq34/pointnet2" target="_blank">Fan et al.</a>)
+#### Compile the EMD/Chamfer losses (CUDA implementations from <a href="https://github.com/charlesq34/pointnet2" target="_blank">Fan et al.</a>)
     cd pcl2pcl-gan-pub/pc2pc/structural_losses_utils
     # with your editor, modify the paths in the makefile
     make

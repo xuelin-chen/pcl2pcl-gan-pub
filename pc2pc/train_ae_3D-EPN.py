@@ -78,8 +78,8 @@ elif cat_name == 'car':
     para_config['decay_step'] = 5760000 # ~120 epochs
     para_config['output_interval'] = 10
 
-TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['train_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
-TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['test_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='all', preprocess=False)
+TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['train_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='train', preprocess=False)
+TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config['train_point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='val', preprocess=False)
 
 #################### back up code for this run ##########################
 #LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))

@@ -14,7 +14,7 @@ Instructions can be found from <a href="https://github.com/charlesq34/pointnet2"
     make
 
 ### Data
-For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="tmp_TBA" target="http://irc.cs.sdu.edu.cn/~xuelin/pcl2pcl/data.zip">data</a>.
+For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="http://irc.cs.sdu.edu.cn/~xuelin/pcl2pcl/data.zip" target="_blank">data</a>.
 After download is finished, unzip the zip file, put it under pcl2pcl-gan-pub/pc2pc/data
 
 ### Train

@@ -2,7 +2,7 @@
 
 Implementation of arxiv preprint paper <a href="https://128.84.21.199/abs/1904.00069" target="_blank">(link)</a>.
 
-![teaser](https://github.com/ChenXuelinCXL/pcl2pcl-gan-pub/tree/master/doc/teaser.png)
+![teaser](./doc/teaser.png)
 
 ### Dependencies
 The code is tested with Python 3.5, TensorFlow 1.5, CUDA 9.0 on Ubuntu. 

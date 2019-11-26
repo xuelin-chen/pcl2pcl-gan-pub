@@ -1,5 +1,7 @@
 ### Unpaired Point Cloud Completion on Real Scans using Adversarial Training
 
+Note: this repo is out-dated, we will update it soon!
+
 Implementation of arxiv preprint paper <a href="https://128.84.21.199/abs/1904.00069" target="_blank">(link)</a>.
 
 ![teaser](./doc/teaser.png)

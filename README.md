@@ -16,7 +16,7 @@ Instructions can be found from <a href="https://github.com/charlesq34/pointnet2"
     make
 
 ### Data
-For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="https://pan.baidu.com/s/1POR9sHOSo1qfMT-oqkHXyQ" target="_blank">data with code：43nc</a>.
+For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="https://pan.baidu.com/s/1POR9sHOSo1qfMT-oqkHXyQ" target="_blank">data with code: 43nc</a>.
 After download is finished, unzip the zip file, put it under pcl2pcl-gan-pub/pc2pc/data
 
 ### Train

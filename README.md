@@ -1,8 +1,6 @@
 ### Unpaired Point Cloud Completion on Real Scans using Adversarial Training
 
-Note: this repo is out-dated, we will update it soon!
-
-Implementation of arxiv preprint paper <a href="https://128.84.21.199/abs/1904.00069" target="_blank">(link)</a>.
+Implementation of arxiv preprint paper <a href="https://arxiv.org/abs/1904.00069" target="_blank">(link)</a>.
 
 ![teaser](./doc/teaser.png)
 
@@ -18,7 +16,7 @@ Instructions can be found from <a href="https://github.com/charlesq34/pointnet2"
     make
 
 ### Data
-For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="http://irc.cs.sdu.edu.cn/~xuelin/pcl2pcl/data.zip" target="_blank">data</a>.
+For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="https://pan.baidu.com/s/1POR9sHOSo1qfMT-oqkHXyQ" target="_blank">data with code：43nc</a>.
 After download is finished, unzip the zip file, put it under pcl2pcl-gan-pub/pc2pc/data
 
 ### Train

@@ -32,7 +32,7 @@ AE_table_c2c_ShapeNetV1_ckpt = os.path.join(PC2PC_DIR, 'run_synthetic/run_table/
 
 AE_plane_c2c_ShapeNetV1_ckpt = os.path.join(PC2PC_DIR, 'run_synthetic/run_plane/ae/log_ae_plane_ShapeNet-V1_c2c/ckpts/model_2000.ckpt')
 
-AE_car_c2c_ShapeNetV1_ckpt = os.path.join(PC2PC_DIR, 'run_synthetic/run_car/ae/log_ae_car_ShapeNet-V1_c2c/ckpts/model_0.ckpt') 
+AE_car_c2c_ShapeNetV1_ckpt = os.path.join(PC2PC_DIR, 'run_synthetic/run_car/ae/log_ae_car_ShapeNet-V1_c2c/ckpts/model_2000.ckpt') 
 
 ######################## AE ckpt - 3D-EPN
 # NOTE: pick a model at around 500 epoch, since 3D-EPN has too more training data compared to our synthetic ShapeNet data, training AE on 3D-EPN for less epochs, stop at 500 empirically.
@@ -42,7 +42,7 @@ AE_table_np2np_EPN_ckpt = os.path.join(PC2PC_DIR, 'run_3D-EPN/run_table/ae/log_3
 
 AE_plane_np2np_EPN_ckpt = os.path.join(PC2PC_DIR, 'run_3D-EPN/run_plane/ae/log_3DEPN_ae_plane/ckpts/model_500.ckpt')
 
-AE_car_np2np_EPN_ckpt = os.path.join(PC2PC_DIR, 'run_3D-EPN/run_car/ae/log_3DEPN_ae_car/ckpts/model_0.ckpt')
+AE_car_np2np_EPN_ckpt = os.path.join(PC2PC_DIR, 'run_3D-EPN/run_car/ae/log_3DEPN_ae_car/ckpts/model_500.ckpt')
 
 ######################### AE ckpt - scannet real chairs and table
 AE_scannet_chair_ckpt = '/workspace/pointnet2/pc2pc/run_real/run_scannet_chair/ae/log_scannet_chair_real_ae_2019-03-16-19-13-39/ckpts/model_1720.ckpt'

@@ -32,7 +32,7 @@ For training for a specific class (before that, cd pcl2pcl-gan-pub/pc2pc):
 
 ## Citation
 ```
-@inproceedings{chen2019unpaired,
+@inproceedings{chen2020pcl2pcl,
   title={Unpaired Point Cloud Completion on Real Scans using Adversarial Training},
   author={Chen, Xuelin and Chen, Baoquan and Mitra, Niloy J},
   booktitle={Proceedings of the International Conference on Learning Representations (ICLR)},

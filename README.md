@@ -1,6 +1,6 @@
 ### Unpaired Point Cloud Completion on Real Scans using Adversarial Training
 
-Implementation of arxiv preprint paper <a href="https://arxiv.org/abs/1904.00069" target="_blank">(link)</a>.
+Implementation of ICLR 2020 paper <a href="https://arxiv.org/abs/1904.00069" target="_blank">(link)</a>.
 
 ![teaser](./doc/teaser.png)
 
@@ -29,3 +29,13 @@ For training for a specific class (before that, cd pcl2pcl-gan-pub/pc2pc):
 
 3. train GAN:
     CUDA_VISIBLE_DEVICES=0 python3 train_pcl2pcl_gan_3D-EPN.py
+
+## Citation
+```
+@inproceedings{chen2019unpaired,
+  title={Unpaired Point Cloud Completion on Real Scans using Adversarial Training},
+  author={Chen, Xuelin and Chen, Baoquan and Mitra, Niloy J},
+  booktitle={Proceedings of the International Conference on Learning Representations (ICLR)},
+  year={2020}
+}
+```

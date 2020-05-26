@@ -60,6 +60,10 @@ snc_synth_category_to_id = {
 def get_cls_id(cls_name):
     if cls_name == 'plane':
         return snc_synth_category_to_id['airplane']
+    if cls_name == 'boat': # for 3d-epn
+        return '04530566'
+    if cls_name == 'dresser': # for 3d-epn
+        return '02933112'
     return snc_synth_category_to_id[cls_name]
 
 class DemoPointCloudDataset:
@@ -287,7 +291,7 @@ class ShapeNetPartPointsDataset:
         self.batch_idx += 1
         return data_batch
 
-    def next_batch_noise_partial_by_percentage(self, noise_mu=0.0, noise_sigma=0.01, p_min=0.05, p_max=0.5, partial_portion=0.25, with_gt=False):
+    def next_batch_noise_partial_by_percentage(self, noise_mu=0.0, noise_sigma=0.01, p_min=0.1, p_max=0.5, partial_portion=0.5, with_gt=False):
         '''
         p_min and p_max: the min and max percentage of removed points
         partial_portion: the portion of partial data being generated
@@ -328,7 +332,7 @@ class ShapeNetPartPointsDataset:
             return noisy_batch, data_batch
         return noisy_batch   
 
-    def next_batch_noise_added_with_partial(self, noise_mu=0.0, noise_sigma=0.01, r_min=0.1, r_max=0.25, partial_portion=0.25, with_gt=False):
+    def next_batch_noise_added_with_partial(self, noise_mu=0.0, noise_sigma=0.01, r_min=0.1, r_max=0.5, partial_portion=0.5, with_gt=False):
         '''
         r_max: the max radius for carving out the point around a chosen center
         partial_portion: the portion of partial data being generated
@@ -530,32 +534,41 @@ class ShapeNetPartPointsDataset_V1:
             return True
         return False
     
-    def next_batch(self):
+    def next_batch(self, with_name=False):
         start_idx = self.batch_idx * self.batch_size
         end_idx = (self.batch_idx+1) * self.batch_size
 
         data_batch = np.zeros((self.batch_size, self.npoint, 3))
+        name_list = []
         for i in range(start_idx, end_idx):
 
             if i >= len(self.point_clouds):
                 i_tmp = i % len(self.point_clouds)
                 pc_cur = self.point_clouds[i_tmp]
+                name_cur = self.pc_filenames[i_tmp].split('/')[-1]
             else:
                 pc_cur = self.point_clouds[i] # M x 3
+                name_cur = self.pc_filenames[i].split('/')[-1]
 
             choice_cur = self.rand_gen.choice(pc_cur.shape[0], self.npoint, replace=True)
             idx_cur = i % self.batch_size
             data_batch[idx_cur] = pc_cur[choice_cur, :]
+            name_list.append(name_cur)
 
         self.batch_idx += 1
+        if with_name:
+            return data_batch, name_list
         return data_batch
 
-    def next_batch_noise_partial_by_percentage(self, noise_mu=0.0, noise_sigma=0.01, p_min=0.05, p_max=0.5, partial_portion=0.25, with_gt=False):
+    def next_batch_noise_partial_by_percentage(self, noise_mu=0.0, noise_sigma=0.01, p_min=0.0, p_max=0.5, partial_portion=1.0, with_gt=False, with_name=False):
         '''
         p_min and p_max: the min and max percentage of removed points
         partial_portion: the portion of partial data being generated
         '''
-        data_batch = self.next_batch()
+        if not with_name:
+            data_batch = self.next_batch()
+        else:
+            data_batch, name_list = self.next_batch(with_name)
 
         # randomly carve out some points
         data_res = []
@@ -587,8 +600,8 @@ class ShapeNetPartPointsDataset_V1:
         noise_here = self.rand_gen.normal(noise_mu, noise_sigma, data_res.shape)
         noisy_batch = data_res + noise_here
 
-        if with_gt:
-            return noisy_batch, data_batch
+        if with_gt and with_name:
+            return noisy_batch, data_batch, name_list
         return noisy_batch   
 
     def next_batch_noise_added_with_partial(self, noise_mu=0.0, noise_sigma=0.01, r_min=0.1, r_max=0.25, partial_portion=0.25, with_gt=False):
@@ -714,7 +727,7 @@ class ShapeNet_3DEPN_PointsDataset:
             print('Reading and caching pickle file.')
             point_clouds = pc_util.read_ply_from_file_list(self.pc_filenames) # a list of arrays
 
-            # NOTE!!!: rotate the point clouds here, to align with our data
+            # NOTE!!!: rotate the point clouds here, to align with shapenet v2 data
             for pc_id, pc in enumerate(point_clouds):
                 rotated_points = pc_util.rotate_point_cloud_by_axis_angle(pc, [0,1,0], 90)
                 point_clouds[pc_id] = rotated_points
@@ -929,7 +942,7 @@ class RealWorldPointsDataset:
     
     def _read_all_meshes(self, mesh_dir):
         meshes_cache_filename = os.path.join(os.path.dirname(mesh_dir), 'meshes_cache_%s.pickle'%(self.split))
-
+        
         if os.path.exists(meshes_cache_filename):
             print('Loading cached pickle file: %s'%(meshes_cache_filename))
             p_f = open(meshes_cache_filename, 'rb')

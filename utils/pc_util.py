@@ -306,7 +306,9 @@ def read_ply(filename):
 
 def read_ply_xyz(filename):
     """ read XYZ point cloud from filename PLY file """
-    assert(os.path.isfile(filename))
+    if not os.path.isfile(filename):
+        print(filename)
+        assert(os.path.isfile(filename))
     with open(filename, 'rb') as f:
         plydata = PlyData.read(f)
         num_verts = plydata['vertex'].count
@@ -364,6 +366,9 @@ def read_ply_from_file_list(file_list):
     '''
     point_clouds = []
     for ply_f in tqdm(file_list):
+        if not os.path.isfile(ply_f):
+            print('Warning: skipping. ', ply_f)
+            continue
         pc = read_ply_xyz(ply_f)
         point_clouds.append(pc)
     
@@ -429,6 +434,37 @@ def write_ply_batch_with_name(point_cloud_batch, name_batch, out_dir):
     for pidx, pc in enumerate(point_cloud_batch):
         pc_name = os.path.join(out_dir, name_batch[pidx])
         write_ply(pc, pc_name)
+
+def write_ply_versatile(points, filename, colors=None, normals=None, text=False):
+    """ input: Nx3, write points to filename as PLY format. """
+    if colors is not None: assert(points.shape[0]==colors.shape[0])
+    if normals is not None: assert(points.shape[0]==normals.shape[0])
+
+    if colors is None and normals is None:
+        points = [(points[i,0], points[i,1], points[i,2]) for i in range(points.shape[0])]
+        vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'),('z', 'f4')])
+    elif colors is not None and normals is None:
+        points = [(points[i,0], points[i,1], points[i,2], 
+                   int(colors[i, 0]*255), int(colors[i, 1]*255), int(colors[i, 2]*255)
+                  ) for i in range(points.shape[0])]
+        vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4'), 
+                                         ('red', 'u1'), ('green', 'u1'), ('blue', 'u1')])
+    elif colors is None and normals is not None:
+        points = [(points[i,0], points[i,1], points[i,2], 
+                   normals[i, 0], normals[i, 1], normals[i, 2]
+                  ) for i in range(points.shape[0])]
+        vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4'), 
+                                         ('nx', 'f4'), ('ny', 'f4'), ('nz', 'f4')])
+    elif colors is not None and normals is not None:
+        points = [(points[i,0], points[i,1], points[i,2], 
+                   normals[i, 0], normals[i, 1], normals[i, 2], 
+                   int(colors[i, 0]*255), int(colors[i, 1]*255), int(colors[i, 2]*255)
+                   ) for i in range(points.shape[0])]
+        vertex = np.array(points, dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4'), 
+                                         ('nx', 'f4'), ('ny', 'f4'), ('nz', 'f4'), 
+                                         ('red', 'u1'), ('green', 'u1'), ('blue', 'u1')])
+    el = PlyElement.describe(vertex, 'vertex', comments=['vertices'])
+    PlyData([el], text=text).write(filename)
 
 # ----------------------------------------
 # Point Cloud Manipulation

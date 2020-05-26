@@ -1,6 +1,8 @@
 '''
     Single-GPU training.
+    CUDA_VISIBLE_DEVICES=0 python3 train_pcl2pcl_gan_3D-EPN.py --cat_name chair
 '''
+import argparse
 import math
 from datetime import datetime
 import socket
@@ -24,30 +26,57 @@ from latent_gan import PCL2PCLGAN
 import shapenet_pc_dataset
 import config
 
-cat_name = 'table'
-note = 'default'
+parser = argparse.ArgumentParser()
+parser.add_argument('--cat_name', default='chair', help='category name for training')
+parser.add_argument('--restore_ckpt', default=None, help='restore training checkpoint')
+parser.add_argument('--ae_mode', default='shared', help='shared or separate AE')
+parser.add_argument('--pcl2pcl_mode', default=None, help='pcl2pcl mode: [None | withoutGAN | withoutRecon | EMD]')
+FLAGS = parser.parse_args()
 
+cat_name = FLAGS.cat_name
+ae_mode = FLAGS.ae_mode # shared | separate
 loss = 'hausdorff'
+if FLAGS.pcl2pcl_mode is not None:
+    if FLAGS.pcl2pcl_mode == 'withoutGAN':
+        l_alpha = 0.
+        l_beta = 1.
+    elif FLAGS.pcl2pcl_mode == 'withoutRecon':
+        l_alpha = 1.
+        l_beta = 0.
+    elif FLAGS.pcl2pcl_mode == 'EMD':
+        l_alpha = 0.25
+        l_beta = 0.75
+        loss = 'emd'
+    else:
+        raise NotImplementedError('Pcl2pcl mode %s not implemented!'%(FLAGS.pcl2pcl_mode))
+else:
+    l_alpha = 0.25
+    l_beta = 0.75
 
 para_config_gan = {
-    'exp_name': '%s_pcl2pcl_gan_3D-EPN_%s'%(cat_name, note),
+    'exp_name': '%s_pcl2pcl_gan_3D-EPN'%(cat_name),
     'random_seed': None,
 
-    'recover_ckpt': None,
+    'recover_ckpt': FLAGS.restore_ckpt,
 
+    # training parameters
     'batch_size': 24, # 24 by default
     'lr': 0.0001, # 0.0001 by default
     'beta1': 0.5,
-    'epoch': 3001,
+    'epoch': 1001,
     'k': 1, # train k times for D each loop when training
     'kk': 1, # train k times for G each loop when training
-    'output_interval': 1, # unit in epoch
-    'save_interval': 10, # unit in epoch
+    'output_interval': 1, # unit in epoch for outputing log
+    'save_interval': 10, # unit in epoch for saving checkpoint
+    'save_ply_interval': 100, # unit in epoch for saving ply point clouds
 
+    # parameters on loss
+    'l_alpha': l_alpha, # weight on gan loss of G
+    'l_beta': l_beta, # weight on reconstruction loss of G
     'loss': loss,
-    'lambda': 1.0, # parameter on back-reconstruction loss
-    'eval_loss': loss, # useless
+    'eval_loss': loss,
 
+    # parameters on networks
     'latent_dim': 128,
     'point_cloud_shape': [2048, 3],
     
@@ -61,7 +90,7 @@ para_config_gan = {
     'd_activation_fn': tf.nn.leaky_relu,
     'd_bn': False,
 }
-# paras for autoencoder
+# paras for autoencoder, should be consistent with ae training
 para_config_ae = {
     # encoder
     'latent_code_dim': 128,
@@ -79,51 +108,105 @@ para_config_ae = {
 }
 
 if cat_name == 'chair':
-    para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '03001627/point_cloud_clean')
-    para_config_gan['3D-EPN_train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '03001627/point_cloud')
-    para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '03001627/point_cloud')
-
-    para_config_gan['noisy_ae_ckpt'] = config.AE_chair_np2np_EPN_ckpt
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_chair_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_chair_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_chair_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_chair_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_chair_np2np_EPN_ckpt
     para_config_gan['clean_ae_ckpt'] = config.AE_chair_c2c_ShapeNetV1_ckpt
-
-elif cat_name == 'table':
-    para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '04379243/point_cloud_clean')
-    para_config_gan['3D-EPN_train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '04379243/point_cloud')
-    para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '04379243/point_cloud')
-
-    para_config_gan['noisy_ae_ckpt'] = config.AE_table_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_table_c2c_ShapeNetV1_ckpt
-
-elif cat_name == 'plane':
-    para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02691156/point_cloud_clean')
-    para_config_gan['3D-EPN_train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '02691156/point_cloud')
-    para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02691156/point_cloud')
-
-    para_config_gan['noisy_ae_ckpt'] = config.AE_plane_np2np_EPN_ckpt
-    para_config_gan['clean_ae_ckpt'] = config.AE_plane_c2c_ShapeNetV1_ckpt
-
-elif cat_name == 'car':
-    para_config_gan['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02958343/point_cloud_clean')
-    para_config_gan['3D-EPN_train_point_cloud_dir'] = os.path.join(config.EPN_dataset_train_dir, '02958343/point_cloud')
-    para_config_gan['3D-EPN_test_point_cloud_dir'] = os.path.join(config.EPN_dataset_test_dir, '02958343/point_cloud')
     
-    para_config_gan['noisy_ae_ckpt'] = config.AE_car_np2np_EPN_ckpt
+elif cat_name == 'table':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_table_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_table_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_table_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_table_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_table_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_table_c2c_ShapeNetV1_ckpt
+    
+elif cat_name == 'plane':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_plane_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_plane_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_plane_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_plane_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_plane_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_plane_c2c_ShapeNetV1_ckpt
+    
+elif cat_name == 'car':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_car_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_car_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_car_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_car_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_car_np2np_EPN_ckpt    
     para_config_gan['clean_ae_ckpt'] = config.AE_car_c2c_ShapeNetV1_ckpt
+    
+elif cat_name == 'lamp':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_lamp_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_lamp_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_lamp_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_lamp_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_lamp_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_lamp_c2c_ShapeNetV1_ckpt
 
-if 'v1' in para_config_gan['point_cloud_dir']:
+elif cat_name == 'sofa':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_sofa_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_sofa_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_sofa_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_sofa_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_sofa_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_sofa_c2c_ShapeNetV1_ckpt
+
+elif cat_name == 'boat':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_boat_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_boat_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_boat_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_boat_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_boat_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_boat_c2c_ShapeNetV1_ckpt
+
+elif cat_name == 'dresser':
+    para_config_gan['point_cloud_dir'] = config.ShapeNet_v1_dresser_point_cloud
+    para_config_gan['3D-EPN_train_point_cloud_dir'] = config.EPN_dresser_point_cloud_dir
+    para_config_gan['3D-EPN_test_point_cloud_dir'] = config.EPN_dresser_point_cloud_dir
+    if ae_mode == 'shared':
+        para_config_gan['noisy_ae_ckpt'] = config.AE_dresser_c2c_ShapeNetV1_ckpt
+    else:
+        para_config_gan['noisy_ae_ckpt'] = config.AE_dresser_np2np_EPN_ckpt
+    para_config_gan['clean_ae_ckpt'] = config.AE_dresser_c2c_ShapeNetV1_ckpt
+
+
+if 'v1' in para_config_gan['point_cloud_dir'] or 'V1' in para_config_gan['point_cloud_dir']:
     print('Using ShapeNet-V1 data')
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 else:
     CLEAN_TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset(para_config_gan['point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='all', preprocess=False)
 NOISY_TRAIN_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=True, split='train', preprocess=False)
-NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_train_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='val', preprocess=False)
+NOISY_TEST_DATASET = shapenet_pc_dataset.ShapeNet_3DEPN_PointsDataset(para_config_gan['3D-EPN_test_point_cloud_dir'], batch_size=para_config_gan['batch_size'], npoint=para_config_gan['point_cloud_shape'][0], shuffle=False, split='val', preprocess=False) # only using validation set
 
 #################### dirs, code backup and etc for this run ##########################
-#LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-LOG_DIR = os.path.join('run_3D-EPN', 'run_%s'%(cat_name), 'pcl2pcl', 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'])
+exp_postfix = ''
+if FLAGS.pcl2pcl_mode is not None:
+    exp_postfix = exp_postfix + '_' + FLAGS.pcl2pcl_mode
+if para_config_gan['recover_ckpt'] is None:
+    LOG_DIR = os.path.join('run', 'run_3D-EPN_pcl2pcl'+exp_postfix, 'run_%s'%(cat_name), 'log_' + para_config_gan['exp_name'] + '_' + para_config_gan['loss'] + '_' + ae_mode + 'AE' + '_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+else:
+    prev_dirname = para_config_gan['recover_ckpt'].split('/')[-3]
+    LOG_DIR = os.path.join('run', 'run_3D-EPN_pcl2pcl'+exp_postfix, 'run_%s'%(cat_name), prev_dirname)
 print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
-
 script_name = os.path.basename(__file__)
 bk_filenames = ['latent_gan.py', 
                 'config.py',
@@ -135,7 +218,6 @@ for bf in bk_filenames:
 LOG_FOUT = open(os.path.join(LOG_DIR, 'log_train.txt'), 'w')
 LOG_FOUT.write(str(para_config_gan)+'\n')
 LOG_FOUT.write(str(para_config_ae)+'\n')
-
 HOSTNAME = socket.gethostname()
 ##########################################################################
 
@@ -154,7 +236,6 @@ def get_restore_dict(stored_vars, current_vars):
     for v in current_vars:
         v_name_stored = v.name[6:-2]
         res[v_name_stored] = v
-
     return res
 
 def train():
@@ -198,7 +279,6 @@ def train():
         # print
         log_string('Net layers:')
         log_string(str(latent_gan))
-
         # Create a session
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True
@@ -213,25 +293,16 @@ def train():
             if para_config_gan['recover_ckpt'] is not None:
                 print('Continue training from %s'%(para_config_gan['recover_ckpt']))
                 saver.restore(sess, para_config_gan['recover_ckpt'])
+                print('Checkpoint loaded.')
             else:
                 # NOTE: load pre-trained AE weights
                 # noisy AE, only pre-trained encoder is used
                 noisy_ckpt_vars = tf.contrib.framework.list_variables(para_config_gan['noisy_ae_ckpt'])
-                '''
-                print('Noisy AE pre-trained variables:')
-                for vname, _ in noisy_ckpt_vars:
-                    print(vname)
-                '''
                 restore_dict = get_restore_dict(noisy_ckpt_vars, latent_gan.noisy_encoder.all_variables)
                 noisy_saver = tf.train.Saver(restore_dict)
                 noisy_saver.restore(sess, para_config_gan['noisy_ae_ckpt'])
                 # clean AE, both pre-trained encoder and decoder are used
                 clean_ckpt_vars = tf.contrib.framework.list_variables(para_config_gan['clean_ae_ckpt'])
-                '''
-                print('Clean AE pre-trained variables:')
-                for vname, _ in clean_ckpt_vars:
-                    print(vname)
-                '''
                 restore_dict = get_restore_dict(clean_ckpt_vars, latent_gan.clean_encoder.all_variables)
                 clean_saver = tf.train.Saver(restore_dict)
                 clean_saver.restore(sess, para_config_gan['clean_ae_ckpt'])
@@ -241,13 +312,16 @@ def train():
                 print('Loading pre-trained noisy/clean AE done.')
                 # END of weights loading
 
-            for i in range(para_config_gan['epoch']):
+            if para_config_gan['recover_ckpt'] is None:
+                epoch_idx_start = 0
+            else:
+                epoch_idx_start = int(para_config_gan['recover_ckpt'].split('/')[-1].replace('model_', '').replace('.ckpt', ''))
+            print('Start training... from epoch: ', epoch_idx_start)
+            for i in range(epoch_idx_start, para_config_gan['epoch']):
                 sess.run(reset_metrics)
-
                 while NOISY_TRAIN_DATASET.has_next_batch() and CLEAN_TRAIN_DATASET.has_next_batch():
                     noise_cur = NOISY_TRAIN_DATASET.next_batch()
                     clean_cur = CLEAN_TRAIN_DATASET.next_batch()
-
                     feed_dict={
                             latent_gan.input_noisy_cloud: noise_cur,
                             latent_gan.input_clean_cloud: clean_cur,
@@ -255,9 +329,9 @@ def train():
                             }
                     # train D for k times
                     for _ in range(para_config_gan['k']):
-                        sess.run([D_optimizer, D_fake_loss_mean_update_op, D_real_loss_mean_update_op, D_loss_mean_update_op],
-                                feed_dict=feed_dict)
-
+                        if para_config_gan['l_alpha'] > 0:
+                            sess.run([D_optimizer, D_fake_loss_mean_update_op, D_real_loss_mean_update_op, D_loss_mean_update_op],
+                                                                                                            feed_dict=feed_dict)
                     # train G
                     for _ in range(para_config_gan['kk']):
                         sess.run([G_optimizer, G_tofool_loss_mean_update_op, reconstr_loss_mean_update_op, G_loss_mean_update_op], 
@@ -276,18 +350,15 @@ def train():
                               D_loss_mean_op, D_fake_loss_mean_op, D_real_loss_mean_op, \
                               fake_clean_reconstr, summary_op], 
                               feed_dict=feed_dict)
-                    
                     # save currently generated
-                    if i % para_config_gan['save_interval'] == 0:
+                    if i % para_config_gan['save_ply_interval'] == 0:
                         pc_util.write_ply_batch(fake_clean_reconstr_val, os.path.join(LOG_DIR, 'fake_cleans', 'reconstr_%d'%(i)))
                         pc_util.write_ply_batch(noise_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_noisy_%d'%(i)))
                         pc_util.write_ply_batch(clean_cur, os.path.join(LOG_DIR, 'fake_cleans', 'input_clean_%d'%(i)))
-                    
                     # terminal prints
                     log_string('%s training %d snapshot: '%(datetime.now().strftime('%Y-%m-%d-%H-%M-%S'), i))
                     log_string('        G loss: {:.6f} = (g){:.6f}, (r){:.6f}'.format(G_loss_mean_val, G_tofool_loss_mean_val, reconstr_loss_mean_val))
                     log_string('        D loss: {:.6f} = (f){:.6f}, (r){:.6f}'.format(D_loss_mean_val, D_fake_loss_mean_val, D_real_loss_mean_val))
-                    
                     # tensorboard output
                     train_writer.add_summary(summary, i)
 
@@ -303,14 +374,10 @@ def train():
                                     latent_gan.is_training: False,
                                     }
                         fake_clean_reconstr_val, _ = sess.run([fake_clean_reconstr, eval_loss_mean_update_op], feed_dict=feed_dict)
-
                     NOISY_TEST_DATASET.reset()
-
                     eval_loss_mean_val, summary_eval = sess.run([eval_loss_mean_op, summary_eval_op], feed_dict=feed_dict)
-
                     test_writer.add_summary(summary_eval, i)
                     log_string('Eval loss (%s) on test set: %f'%(para_config_gan['eval_loss'], np.mean(eval_loss_mean_val)))
-                    
                     # save model
                     save_path = saver.save(sess, os.path.join(LOG_DIR, 'ckpts', 'model_%d.ckpt'%(i)))
                     log_string("Model saved in file: %s" % save_path)

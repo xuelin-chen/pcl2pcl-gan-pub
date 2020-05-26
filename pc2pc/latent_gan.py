@@ -107,13 +107,22 @@ class PCL2PCLGAN:
 
         fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
 
-        reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud) # comput loss against the input
-        G_tofool_loss = self._generator_loss(self.D, self.fake_code)
-        G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
+        if self.para_config['l_beta'] > 0 :
+            reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud) # comput loss against the input
+        else:
+            reconstr_loss = 0.
+        if self.para_config['l_alpha'] > 0:
+            G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        else:
+            G_tofool_loss = 0.
+        G_loss = self.para_config['l_alpha'] * G_tofool_loss + self.para_config['l_beta'] * reconstr_loss
 
         self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
 
-        D_fake_loss, D_real_loss, D_loss = self._discriminator_loss(self.D, self.fake_code, self.real_code)
+        if self.para_config['l_alpha'] > 0:
+            D_fake_loss, D_real_loss, D_loss = self._discriminator_loss(self.D, self.fake_code, self.real_code)
+        else:
+            D_fake_loss, D_real_loss, D_loss = 0, 0, 0
 
         # eval only loss
         eval_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt, eval_loss=self.para_config['eval_loss'])
@@ -130,7 +139,7 @@ class PCL2PCLGAN:
 
         reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt) # compute loss against gt
         G_tofool_loss = self._generator_loss(self.D, self.fake_code)
-        G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
+        G_loss = self.para_config['l_alpha'] * G_tofool_loss + self.para_config['l_beta'] * reconstr_loss
 
         self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
 
@@ -150,9 +159,10 @@ class PCL2PCLGAN:
         fake_clean_reconstr = self.clean_decoder(self.fake_code, tf.constant(False, shape=()))
 
         reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.gt) # compute loss against gt
-        G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        #G_tofool_loss = self._generator_loss(self.D, self.fake_code)
+        G_tofool_loss = 0.
         #G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
-        G_loss = self.para_config['lambda'] * reconstr_loss # no GAN loss, only EMD loss against GT
+        G_loss = reconstr_loss # no GAN loss, only EMD loss against GT
 
         self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
 
@@ -195,7 +205,7 @@ class PCL2PCLGAN:
         reconstr_loss = self._reconstruction_loss(fake_clean_reconstr, self.input_noisy_cloud) # comput loss against the input
         #G_tofool_loss = self._generator_loss(self.D, self.fake_code)
         #G_loss = G_tofool_loss + self.para_config['lambda'] * reconstr_loss
-        G_loss = self.para_config['lambda'] * reconstr_loss # no GAN loss
+        G_loss = reconstr_loss # no GAN loss
 
         self.real_code = self.clean_encoder(self.input_clean_cloud, tf.constant(False, shape=()))
 
@@ -297,7 +307,10 @@ class PCL2PCLGAN:
                 return learning_step
 
         G_optimizer = make_optimizer(g_loss, self.G.variables, name='Adam_G')
-        D_optimizer = make_optimizer(d_loss, self.D.variables, name='Adam_D')
+        if self.para_config['l_alpha'] > 0:
+            D_optimizer = make_optimizer(d_loss, self.D.variables, name='Adam_D')
+        else:
+            D_optimizer = None
 
         return G_optimizer, D_optimizer
     

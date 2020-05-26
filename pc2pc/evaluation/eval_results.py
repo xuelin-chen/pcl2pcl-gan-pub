@@ -3,24 +3,18 @@ import numpy as np
 import evaluation_utils
 from tqdm import tqdm
 import multiprocessing
-from random import sample
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PC2PC_DIR = os.path.dirname(BASE_DIR)
-print(BASE_DIR)
-print('BASE_DIR:', BASE_DIR)
-print('PC2PC_DIR: ', PC2PC_DIR)
-sys.path.append(os.path.join(PC2PC_DIR, '../utils'))
+ROOT_DIR = os.path.dirname(BASE_DIR)
+sys.path.append(os.path.join(ROOT_DIR, '../utils'))
 import pc_util
 
-# result folder to evaluate
-test_dir = os.path.join(PC2PC_DIR, 'test_3D-EPN/val_pcl2pcl_car/all_models_ShapeNetV1-GT')
-
-num_samples = None
-num_workers = 70
+num_workers = 10
 thre = 0.03
-
 keyword2filter = None
+
+test_dir = '/workspace/pcl2pcl-gan/pc2pc/results/test_3D-EPN_pcl2pcl_sharedAE'
+#test_dir = '/workspace/pcn/results'
 
 def gt_isvalid(gt_points):
     pts_max = np.max(gt_points)
@@ -29,15 +23,12 @@ def gt_isvalid(gt_points):
     return True
 
 def eval_result_folder(result_dir):
+    #gt_point_cloud_dir = get_3D_EPN_GT_dir(result_dir)
     gt_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'gt')
     result_point_cloud_dir = os.path.join(result_dir, 'pcloud', 'reconstruction')
 
     re_pc_names = os.listdir(result_point_cloud_dir)
     re_pc_names.sort()
-
-    # randomly evaluate a part of the results
-    if num_samples is not None:
-        re_pc_names = sample(re_pc_names, num_samples)
 
     all_acc_percentage = []
     all_acc_avg_dist = []
@@ -73,9 +64,10 @@ def eval_result_folder(result_dir):
     f1_score = evaluation_utils.compute_F1_score(avg_acc_perct, avg_comp_perct)
 
     print('%s:'%(result_dir.split('/')[-1]))
-    print('\tacc_avg_distance, acc_percentage, completeness-avg_distance, completeness-percentage, F1: %s,%s,%s,%s,%s'%(str(avg_acc_avg_dist), str(avg_acc_perct), str(avg_comp_avg_dist), str(avg_comp_perct), str(f1_score)))
+    print('\tacc_avg_distance, completeness-avg_distance: %s,%s'%(str(avg_acc_avg_dist), str(avg_comp_avg_dist)))
+    print('\tacc_percentage, completeness-percentage, F1: %s,%s,%s'%(str(avg_acc_perct*100.), str(avg_comp_perct*100.), str(f1_score*100.)))
 
-
+print('Working directory:', test_dir)
 result_folders = os.listdir(test_dir)
 result_folders.sort()
 

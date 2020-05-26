@@ -23,7 +23,7 @@ import shapenet_pc_dataset
 import autoencoder
 import config
 
-cat_name = 'car'
+cat_name = 'dresser'
 
 para_config = {
     'exp_name': 'ae_%s_ShapeNet-V1'%(cat_name),
@@ -35,17 +35,13 @@ para_config = {
     'decay_rate': 0.5,
     'clip_lr': 0.0001, # minimal learning rate for clipping lr
     'epoch': 2001,
-    'save_interval': 10, # unit in epoch
+    'save_interval': 40, # unit in epoch
     
     'loss': 'emd',
     
-    #################################
-    # do not change variables below #
-    #################################
-
     'data_aug': None,
 
-    # noise parameters
+    # noise parameters, not used when ae_type = c2c
     'noise_mu': 0.0, 
     'noise_sigma': 0.01, 
     #'r_min': 0.1, 
@@ -69,37 +65,49 @@ para_config = {
     'activation_fn': tf.nn.relu,
 }
 
+#'decay_step': 7000000, # in samples, for chair data: 5000000 (~800 epoches), for table data: 7000000 (~800 epoches) 
+#'output_interval': 10, # unit in batch
 if cat_name == 'chair':
-    para_config['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '03001627/point_cloud_clean')
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_chair_point_cloud
     para_config['decay_step'] = 5000000
     para_config['output_interval'] = 30
 elif cat_name == 'table':
-    para_config['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '04379243/point_cloud_clean')
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_table_point_cloud
     para_config['decay_step'] = 7000000
     para_config['output_interval'] = 30
 elif cat_name == 'plane':
-    para_config['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02691156/point_cloud_clean')
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_plane_point_cloud
     para_config['decay_step'] = 3500000
     para_config['output_interval'] = 10
 elif cat_name == 'car':
-    para_config['point_cloud_dir'] = os.path.join(config.ShapeNet_v1_point_cloud_dir, '02958343/point_cloud_clean')
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_car_point_cloud
     para_config['decay_step'] = 6000000
     para_config['output_interval'] = 10
-elif cat_name == 'motorbike':
-    # NOT USED
-    para_config['point_cloud_dir'] = '03790512/point_cloud_clean'
-    para_config['decay_step'] = 250000
-    para_config['output_interval'] = 1
-    para_config['batch_size'] = 30 # only have 300+ motorbikes, use small batch size.
 
-# NOTE: need a shapenet v1 data provider, in which the point clouds need to be rotated to be aligned with v2 data
+elif cat_name == 'lamp':
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_lamp_point_cloud
+    para_config['decay_step'] = 2000000
+    para_config['output_interval'] = 5
+elif cat_name == 'sofa':
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_sofa_point_cloud
+    para_config['decay_step'] = 2500000
+    para_config['output_interval'] = 5
+elif cat_name == 'boat':
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_boat_point_cloud
+    para_config['decay_step'] = 1800000
+    para_config['output_interval'] = 5
+elif cat_name == 'dresser':
+    para_config['point_cloud_dir'] = config.ShapeNet_v1_dresser_point_cloud
+    para_config['decay_step'] = 1000000
+    para_config['output_interval'] = 5
+
 TRAIN_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=True, split='trainval', preprocess=False)
 TEST_DATASET = shapenet_pc_dataset.ShapeNetPartPointsDataset_V1(para_config['point_cloud_dir'], batch_size=para_config['batch_size'], npoint=para_config['point_cloud_shape'][0], shuffle=False, split='test', preprocess=False)
 
 #################### back up code for this run ##########################
 #LOG_DIR = os.path.join('run_synthetic', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
-LOG_DIR = os.path.join('run_synthetic', 'run_%s'%(cat_name), 'ae', 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'])
-print('Log dir:', LOG_DIR)
+LOG_DIR = os.path.join('run', 'run_shapenet_v1_clean_ae', 'run_%s'%(cat_name), 'log_' + para_config['exp_name'] + '_' + para_config['ae_type'] +'_' + datetime.now().strftime('%Y-%m-%d-%H-%M-%S'))
+print(LOG_DIR)
 if not os.path.exists(LOG_DIR): os.makedirs(LOG_DIR)
 
 script_name = os.path.basename(__file__)
@@ -243,9 +251,10 @@ def train():
                 test_writer.flush()
 
                 # write out only one batch for check
-                pc_util.write_ply_batch(np.asarray(reconstr_val_test), os.path.join(LOG_DIR, 'pcloud', 'reconstr_%d'%(ep_idx)))
-                pc_util.write_ply_batch(np.asarray(input_batch_test), os.path.join(LOG_DIR, 'pcloud', 'input_%d'%(ep_idx)))
-
+                if False:
+                    pc_util.write_ply_batch(np.asarray(reconstr_val_test), os.path.join(LOG_DIR, 'pcloud', 'reconstr_%d'%(ep_idx)))
+                    pc_util.write_ply_batch(np.asarray(input_batch_test), os.path.join(LOG_DIR, 'pcloud', 'input_%d'%(ep_idx)))
+                
                 # save model
                 save_path = saver.save(sess, os.path.join(LOG_DIR, 'ckpts', 'model_%d.ckpt'%(ep_idx)))
                 log_string("Model saved in file: %s" % save_path)

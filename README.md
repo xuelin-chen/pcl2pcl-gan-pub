@@ -1,6 +1,7 @@
 ### Unpaired Point Cloud Completion on Real Scans using Adversarial Training
 
 Implementation of ICLR 2020 paper <a href="https://arxiv.org/abs/1904.00069" target="_blank">(link)</a>.
+Also check <a href="https://github.com/ChrisWu1997/Multimodal-Shape-Completion" target="_blank">this</a>! Our latest follow-up work published in ECCV 2020.
 
 ![teaser](./doc/teaser.png)
 

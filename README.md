@@ -1,3 +1,5 @@
+
+
 ### Unpaired Point Cloud Completion on Real Scans using Adversarial Training
 
 Implementation of ICLR 2020 paper <a href="https://arxiv.org/abs/1904.00069" target="_blank">(link)</a>.
@@ -19,7 +21,7 @@ Instructions can be found from <a href="https://github.com/charlesq34/pointnet2"
 
 ### Data
 For convenience, we provide our synthetic clean and complete point clouds, and point representation data of 3D-EPN, download <a href="https://pan.baidu.com/s/1jDJJ6RjRpuXpu5GSJcPQmg" target="_blank">data with code: npaj</a>.
-After download is finished, unzip the zip file, put it under pcl2pcl-gan-pub/pc2pc/data
+After download is finished, unzip the zip file, put the extracted contents under pcl2pcl-gan-pub/pc2pc/data
 
 ### Train
 For training for a specific class (before that, cd pcl2pcl-gan-pub/pc2pc):
